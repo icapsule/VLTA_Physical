@@ -1,9 +1,20 @@
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+export default async function Home() {
+  const { data, error } = await supabase.auth.getSession();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <div className="flex w-full flex-col items-center justify-center rounded-2xl bg-zinc-100 p-8 text-center dark:bg-zinc-900 mb-12 shadow-sm border border-zinc-200 dark:border-zinc-800">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-400 dark:to-emerald-400">
+            🚀 VLTA_Physical 已连接到 Supabase
+          </h2>
+          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400 font-mono">
+            Session Status: {data.session ? "Active" : "None"} | Error: {error ? error.message : "None"}
+          </p>
+        </div>
         <Image
           className="dark:invert"
           src="/next.svg"
