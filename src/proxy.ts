@@ -20,6 +20,14 @@ const PUBLIC_PATHS = ['/login', '/auth/callback']
  * Middleware: refreshes Supabase session and enforces role-based routing.
  */
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // 🔴 CRITICAL FIX: Bypass middleware on callback to strictly preserve the PKCE auth-code-verifier cookie.
+  // If `getUser()` runs here, it mutates cookies and destroys the oauth state.
+  if (pathname.startsWith('/auth/callback')) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -48,7 +56,6 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
 
   // Unauthenticated user → redirect to login

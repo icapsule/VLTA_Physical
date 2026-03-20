@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { UserRole } from '@/lib/supabase/types'
 
+export const dynamic = 'force-dynamic'
+
 const ROLE_REDIRECT: Record<UserRole, string> = {
   athlete: '/dashboard',
   coach: '/coach/dashboard',
