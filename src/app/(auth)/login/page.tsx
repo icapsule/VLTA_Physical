@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -25,6 +25,17 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
 
   const supabase = createClient()
+
+  useEffect(() => {
+    // Read Supabase GoTrue errors passed via URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const errDesc = params.get('error_description')
+      if (errDesc) {
+        setError(decodeURIComponent(errDesc).replace(/\+/g, ' '))
+      }
+    }
+  }, [])
 
   const handleEmailAuth = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,11 +83,18 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          // IMPORTANT: bypasses Safari 3rd-party cookie blocking
+          skipBrowserRedirect: true,
+        },
       })
       if (oauthError) throw oauthError
+      if (data?.url) {
+        window.location.href = data.url
+      }
     } catch (err) {
       const authErr = err as AuthError
       setError(authErr.message ?? 'Google 登录失败')
