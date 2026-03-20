@@ -19,7 +19,7 @@ const PUBLIC_PATHS = ['/login', '/auth/callback']
 /**
  * Middleware: refreshes Supabase session and enforces role-based routing.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
