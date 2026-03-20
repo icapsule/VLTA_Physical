@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PlanCheckIn from '@/components/features/plan-check-in'
@@ -14,11 +15,10 @@ export default async function PlanDetailPage({ params }: PlanDetailPageProps) {
   const { planId } = await params
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   type AssignmentRow = {
     id: number

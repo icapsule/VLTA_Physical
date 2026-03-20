@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
@@ -7,11 +8,10 @@ import { createClient } from '@/lib/supabase/server'
 export default async function PlansPage() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   const { data: assignments } = await supabase
     .from('plan_assignments')

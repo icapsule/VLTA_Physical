@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { calculateFitnessScore } from '@/lib/utils/fitness-score'
@@ -10,11 +11,10 @@ import type { AthleteLatestResult } from '@/lib/supabase/types'
 export default async function CoachDashboardPage() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   // Get all athletes
   const { data: athletes } = await supabase

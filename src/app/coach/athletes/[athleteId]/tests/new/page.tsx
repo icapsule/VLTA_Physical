@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import BulkTestEntryForm from '@/components/features/bulk-test-entry-form'
@@ -13,11 +14,10 @@ export default async function NewTestPage({ params }: NewTestPageProps) {
   const { athleteId } = await params
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   const [{ data: athlete }, { data: testItems }] = await Promise.all([
     supabase

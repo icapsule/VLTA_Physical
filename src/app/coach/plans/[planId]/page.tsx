@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { PlanProgress } from '@/lib/supabase/types'
@@ -9,11 +10,10 @@ import type { PlanProgress } from '@/lib/supabase/types'
 export default async function CoachPlanDetailPage({ params }: { params: { planId: string } }) {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   // Check role
   const { data: profile } = await supabase

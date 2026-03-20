@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { calculateFitnessScore, SCORE_CONFIG } from '@/lib/utils/fitness-score'
@@ -15,11 +16,10 @@ export default async function AthleteDetailPage({ params }: AthleteDetailPagePro
   const { athleteId } = await params
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   const [{ data: athlete }, { data: testResults }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', athleteId).eq('role', 'athlete').single(),

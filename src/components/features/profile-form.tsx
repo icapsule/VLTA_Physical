@@ -1,27 +1,10 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { z } from 'zod'
+import { useState, useCallback } from 'react'
 import type { Profile } from '@/lib/supabase/types'
-
-const profileSchema = z.object({
-  full_name: z.string().min(1, '姓名不能为空'),
-  phone: z.string().optional(),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  birth_date: z
-    .string()
-    .optional()
-    .refine((d) => {
-      if (!d) return true
-      const age = new Date().getFullYear() - new Date(d).getFullYear()
-      return age >= 8 && age <= 25
-    }, '年龄必须在 8-25 岁之间'),
-  height_cm: z.coerce.number().min(50).max(250).optional().or(z.literal('')),
-  weight_kg: z.coerce.number().min(10).max(200).optional().or(z.literal('')),
-})
-
-type ProfileFormData = z.infer<typeof profileSchema>
+import { profileSchema, type ProfileFormData } from '@/lib/validations/profile'
+import { updateProfile } from '@/lib/actions/profile'
+import { UserButton } from '@clerk/nextjs'
 
 interface ProfileFormProps {
   profile: Profile | null
@@ -29,27 +12,24 @@ interface ProfileFormProps {
   userId: string
 }
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png']
-const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
-
 /**
- * ProfileForm — client component for editing athlete profile and uploading avatar.
+ * ProfileForm — VLTA 2.0 Client Component.
+ * Fully decoupled from Supabase Object Storage. Relies on Clerk Server Actions for IO.
  */
-export default function ProfileForm({ profile, userEmail, userId }: ProfileFormProps) {
+export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   const [formData, setFormData] = useState<ProfileFormData>({
     full_name: profile?.full_name ?? '',
     phone: profile?.phone ?? '',
-    gender: profile?.gender ?? undefined,
+    gender: profile?.gender ?? '',
     birth_date: profile?.birth_date ?? '',
     height_cm: profile?.height_cm ?? '',
     weight_kg: profile?.weight_kg ?? '',
   })
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url ?? null)
+  
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -59,54 +39,6 @@ export default function ProfileForm({ profile, userEmail, userId }: ProfileFormP
       setSuccess(false)
     },
     []
-  )
-
-  const handleAvatarChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (!file) return
-
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        setServerError('仅支持 JPG / PNG 格式的图片')
-        return
-      }
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        setServerError('图片大小不能超过 2MB')
-        return
-      }
-
-      setLoading(true)
-      setServerError(null)
-      const supabase = createClient()
-
-      try {
-        const filePath = `${userId}/avatar.jpg`
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, file, { upsert: true, contentType: file.type })
-
-        if (uploadError) throw uploadError
-
-        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
-        const publicUrl = `${data.publicUrl}?t=${Date.now()}`
-
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ avatar_url: publicUrl })
-          .eq('id', userId)
-
-        if (updateError) throw updateError
-
-        setAvatarPreview(publicUrl)
-        setSuccess(true)
-      } catch (err) {
-        const e = err as { message: string }
-        setServerError(e.message ?? '上传失败')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [userId]
   )
 
   const handleSubmit = useCallback(
@@ -128,75 +60,36 @@ export default function ProfileForm({ profile, userEmail, userId }: ProfileFormP
         return
       }
 
-      const supabase = createClient()
-
-      try {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: parsed.data.full_name,
-            phone: parsed.data.phone ?? null,
-            gender: parsed.data.gender ?? null,
-            birth_date: parsed.data.birth_date || null,
-            height_cm: parsed.data.height_cm ? Number(parsed.data.height_cm) : null,
-            weight_kg: parsed.data.weight_kg ? Number(parsed.data.weight_kg) : null,
-          })
-          .eq('id', userId)
-
-        if (updateError) throw updateError
+      // VLTA 2.0: 纯 Server Action 架构，拒绝直接通过 client 去操作数据库
+      const response = await updateProfile(parsed.data)
+      
+      if (response.error) {
+        setServerError(response.error)
+      } else {
         setSuccess(true)
-      } catch (err) {
-        const e = err as { message: string }
-        setServerError(e.message ?? '保存失败，请重试')
-      } finally {
-        setLoading(false)
       }
+      
+      setLoading(false)
     },
-    [formData, userId]
+    [formData]
   )
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      {/* Avatar */}
-      <div className="flex items-center gap-4">
-        <div
-          className="flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-700 ring-2 ring-gray-600 transition hover:ring-indigo-500"
-          onClick={() => fileInputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-          aria-label="上传头像"
-        >
-          {avatarPreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarPreview} alt="头像" className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-3xl">👤</span>
-          )}
-        </div>
-        <div>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-sm text-indigo-400 hover:text-indigo-300"
-          >
-            更换头像
-          </button>
-          <p className="mt-0.5 text-xs text-gray-500">JPG / PNG，最大 2MB</p>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png"
-          className="hidden"
-          onChange={handleAvatarChange}
-          aria-label="选择头像文件"
+      {/* Clerk 托管的头像 */}
+      <div className="flex items-center gap-4 pb-4 border-b border-gray-800">
+        <UserButton 
+           appearance={{ elements: { userButtonAvatarBox: "w-20 h-20" } }} 
         />
+        <div>
+          <h3 className="text-lg font-medium text-white">账户头像</h3>
+          <p className="mt-0.5 text-xs text-gray-500">点击左侧图像即可通过 Clerk 直接管理头像</p>
+        </div>
       </div>
 
       {/* Read-only email */}
       <div>
-        <label className="mb-1 block text-sm text-gray-400">邮箱（不可修改）</label>
+        <label className="mb-1 block text-sm text-gray-400">邮箱账号（不可在此修改）</label>
         <input
           type="email"
           value={userEmail}
@@ -314,7 +207,7 @@ export default function ProfileForm({ profile, userEmail, userId }: ProfileFormP
       )}
       {success && (
         <div className="rounded-lg border border-green-800 bg-green-900/30 px-4 py-3 text-sm text-green-400">
-          ✅ 资料已更新
+          ✅ 资料已全面同步更新至后端
         </div>
       )}
 
@@ -323,7 +216,7 @@ export default function ProfileForm({ profile, userEmail, userId }: ProfileFormP
         disabled={loading}
         className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? '保存中...' : '保存修改'}
+        {loading ? '正在安全执行...' : '保存修改 (Server Action)'}
       </button>
     </form>
   )

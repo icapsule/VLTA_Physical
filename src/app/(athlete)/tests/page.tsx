@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TestTrendChart from '@/components/features/test-trend-chart'
@@ -11,11 +12,10 @@ type TestResultWithItem = TestResult & { test_items: Pick<TestItem, 'name' | 'un
 export default async function TestsPage() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
 
   const { data: results } = await supabase
     .from('test_results')

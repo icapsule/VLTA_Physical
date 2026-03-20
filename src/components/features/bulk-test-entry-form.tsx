@@ -2,39 +2,25 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { z } from 'zod'
 import type { TestItem } from '@/lib/supabase/types'
-
-const testEntrySchema = z.object({
-  test_date: z
-    .string()
-    .min(1)
-    .refine((d) => new Date(d) <= new Date(), '测试日期不能是未来日期'),
-  entries: z.array(
-    z.object({
-      test_item_id: z.number(),
-      result_value: z.string(),
-      notes: z.string().optional(),
-    })
-  ),
-})
+import { testEntrySchema } from '@/lib/validations/test-results'
+import { bulkInsertTestResults } from '@/lib/actions/test-results'
 
 interface BulkTestEntryFormProps {
   athleteId: string
   athleteName: string
   testItems: TestItem[]
-  coachId: string
+  coachId: string // Used previously, safely ignored by Action now but kept for prop structure compatibility
 }
 
 /**
- * BulkTestEntryForm — allows coach to record multiple test results at once for one athlete.
+ * BulkTestEntryForm — VLTA 2.0 (100% Client-Side Free SQL insertions)
  */
 export default function BulkTestEntryForm({
   athleteId,
   athleteName,
   testItems,
-  coachId,
 }: BulkTestEntryFormProps) {
   const router = useRouter()
   const [testDate, setTestDate] = useState(new Date().toISOString().split('T')[0])
@@ -69,7 +55,6 @@ export default function BulkTestEntryForm({
       setLoading(true)
       setError(null)
 
-      // Filter out empty entries
       const filledEntries = Object.entries(entries)
         .filter(([, v]) => v.value && v.value.trim() !== '')
         .map(([itemId, v]) => ({
@@ -84,49 +69,37 @@ export default function BulkTestEntryForm({
         return
       }
 
-      // Validate with Zod
-      const parsed = testEntrySchema.safeParse({
+      // Payload building for Action Endpoint
+      const payload = {
+        athleteId,
         test_date: testDate,
         entries: filledEntries,
-      })
+      }
 
+      // Prescreen with Zod format checker
+      const parsed = testEntrySchema.safeParse(payload)
       if (!parsed.success) {
-        setError(parsed.error.issues[0]?.message ?? '数据格式错误')
+        setError(parsed.error.issues[0]?.message ?? '数据格式异常')
         setLoading(false)
         return
       }
 
-      const supabase = createClient()
+      // VLTA 2.0: Fire to Server Action Layer
+      const response = await bulkInsertTestResults(parsed.data)
 
-      try {
-        const inserts = parsed.data.entries.map((entry) => ({
-          athlete_id: athleteId,
-          test_item_id: entry.test_item_id,
-          result_value: parseFloat(entry.result_value),
-          test_date: parsed.data.test_date,
-          notes: entry.notes || null,
-          created_by: coachId,
-        }))
-
-        const { error: insertError } = await supabase
-          .from('test_results')
-          .insert(inserts)
-
-        if (insertError) throw insertError
-
+      if (response.error) {
+        setError(response.error)
+      } else {
         setSuccess(true)
         setTimeout(() => {
           router.push(`/coach/athletes/${athleteId}`)
           router.refresh()
         }, 1200)
-      } catch (err) {
-        const e = err as { message: string }
-        setError(e.message ?? '提交失败，请重试')
-      } finally {
-        setLoading(false)
       }
+      
+      setLoading(false)
     },
-    [athleteId, coachId, testDate, entries, router]
+    [athleteId, testDate, entries, router]
   )
 
   return (
@@ -134,12 +107,12 @@ export default function BulkTestEntryForm({
       {/* Athlete + Date header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="mb-1 block text-sm text-gray-400">学员</label>
+          <label className="mb-1 block text-sm text-gray-400">学员核心档</label>
           <p className="text-lg font-semibold text-white">{athleteName}</p>
         </div>
         <div>
           <label htmlFor="test_date" className="mb-1 block text-sm text-gray-300">
-            测试日期 <span className="text-red-400">*</span>
+            录入测试时间 <span className="text-red-400">*</span>
           </label>
           <input
             id="test_date"
@@ -152,15 +125,14 @@ export default function BulkTestEntryForm({
         </div>
       </div>
 
-      {/* Test items table */}
       <div className="overflow-hidden rounded-xl border border-gray-700">
         <table className="w-full text-sm">
           <thead className="bg-gray-800 text-xs text-gray-400">
             <tr>
-              <th className="px-4 py-3 text-left">测试项目</th>
-              <th className="px-4 py-3 text-left">单位</th>
-              <th className="px-4 py-3 text-left">成绩</th>
-              <th className="px-4 py-3 text-left">备注</th>
+              <th className="px-4 py-3 text-left">硬指标实测</th>
+              <th className="px-4 py-3 text-left">单位标准</th>
+              <th className="px-4 py-3 text-left">数值 (Value)</th>
+              <th className="px-4 py-3 text-left">特殊说明 (Notes)</th>
             </tr>
           </thead>
           <tbody>
@@ -176,17 +148,15 @@ export default function BulkTestEntryForm({
                     placeholder="输入成绩"
                     value={entries[item.id]?.value ?? ''}
                     onChange={(e) => handleValueChange(item.id, e.target.value)}
-                    aria-label={`${item.name} 成绩输入`}
                     className="w-28 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </td>
                 <td className="px-4 py-3">
                   <input
                     type="text"
-                    placeholder="可选备注"
+                    placeholder="可选录备注（例：大风环境）"
                     value={entries[item.id]?.notes ?? ''}
                     onChange={(e) => handleNotesChange(item.id, e.target.value)}
-                    aria-label={`${item.name} 备注`}
                     className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </td>
@@ -196,7 +166,6 @@ export default function BulkTestEntryForm({
         </table>
       </div>
 
-      {/* Error / Success */}
       {error && (
         <div className="rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-400">
           {error}
@@ -204,7 +173,7 @@ export default function BulkTestEntryForm({
       )}
       {success && (
         <div className="rounded-lg border border-green-800 bg-green-900/30 px-4 py-3 text-sm text-green-400">
-          ✅ 成绩已录入，正在跳转...
+          ✅ 全维体能指标校验通过，写入成功即将跳转...
         </div>
       )}
 
@@ -214,7 +183,7 @@ export default function BulkTestEntryForm({
           disabled={loading || success}
           className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? '提交中...' : '提交成绩'}
+          {loading ? 'Server校验网关中...' : '提交数据并固化到云端'}
         </button>
         <button
           type="button"

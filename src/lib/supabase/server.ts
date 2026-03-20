@@ -1,34 +1,13 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Creates a Supabase client for use in Server Components and Server Actions.
- * Reads cookies from Next.js headers for session management.
+ * Creates a raw Supabase client.
+ * Decoupled from SSR cookies since VLTA 2.0 uses Clerk for Auth.
  */
 export async function createClient(): Promise<SupabaseClient<any, "public", any>> {
-  const cookieStore = await cookies()
-
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Server Component cannot set cookies; middleware handles refresh
-          }
-        },
-      },
-    }
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ) as any
 }
-
-

@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/supabase/types'
@@ -13,12 +14,11 @@ export default async function AthleteLayout({
 }) {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  const user = userId ? { id: userId } : null
 
   if (!user) {
-    redirect('/login')
+    redirect('/sign-in')
   }
 
   const { data: profileData } = await supabase

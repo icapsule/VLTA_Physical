@@ -1,3 +1,4 @@
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ProfileForm from '@/components/features/profile-form'
@@ -8,16 +9,13 @@ import ProfileForm from '@/components/features/profile-form'
 export default async function ProfilePage() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
+  const clerkUser = await currentUser()
+  if (!clerkUser) redirect('/sign-in')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', clerkUser.id)
     .single()
 
   return (
@@ -30,8 +28,8 @@ export default async function ProfilePage() {
       <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
         <ProfileForm
           profile={profile}
-          userEmail={user.email ?? ''}
-          userId={user.id}
+          userEmail={clerkUser.emailAddresses[0]?.emailAddress ?? ''}
+          userId={clerkUser.id}
         />
       </div>
     </div>
