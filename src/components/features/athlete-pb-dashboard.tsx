@@ -2,17 +2,20 @@
 
 import { useState } from 'react'
 import type { Profile, TestItem } from '@/lib/supabase/types'
-import { DIMENSION_LABELS } from '@/lib/utils/fitness-score'
+import { DIMENSION_LABELS, getScoreConfig, ScoringMode, calculateItemScore } from '@/lib/utils/fitness-score'
 import { submitGroupSession } from '@/lib/actions/group-session-action'
+import { displayMetricValue, parseTimeStringToSeconds } from '@/lib/utils/format'
 import { useRouter } from 'next/navigation'
 
 interface Props {
   athlete: Profile
   metrics: TestItem[]
   pbs: Record<string, { value: number; date: string } | null>
+  mode?: ScoringMode
+  age?: number
 }
 
-export default function AthletePBDashboard({ athlete, metrics, pbs }: Props) {
+export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regular', age = 10 }: Props) {
   const router = useRouter()
   const [editingMetric, setEditingMetric] = useState<TestItem | null>(null)
   const [newValue, setNewValue] = useState<string>('')
@@ -34,13 +37,25 @@ export default function AthletePBDashboard({ athlete, metrics, pbs }: Props) {
     // Using today's date for manual PB overrides
     const today = new Date().toISOString().split('T')[0]
 
+    let finalValue = newValue
+    if (editingMetric.unit === 's') {
+      const parsed = parseTimeStringToSeconds(newValue)
+      if (!isNaN(parsed)) {
+        finalValue = parsed.toString()
+      } else {
+        setError('无效的时间格式')
+        setIsSubmitting(false)
+        return
+      }
+    }
+
     const res = await submitGroupSession({
       testDate: today,
       results: [
         {
           athleteId: athlete.id,
           metricId: editingMetric.id,
-          value: newValue
+          value: finalValue
         }
       ]
     })
@@ -55,12 +70,22 @@ export default function AthletePBDashboard({ athlete, metrics, pbs }: Props) {
     setIsSubmitting(false)
   }
 
+  const scoreConfigs = getScoreConfig(age, athlete.gender, mode, metrics)
+
   return (
     <div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {metrics.map((m) => {
           const pb = pbs[m.id]
           const label = DIMENSION_LABELS[m.dimension as keyof typeof DIMENSION_LABELS] || m.dimension
+          const config = scoreConfigs.find(c => c.metricId === m.id)
+          
+          let pbScore = 0
+          if (pb && config && typeof pb.value === 'number') {
+            pbScore = calculateItemScore(pb.value, config)
+          } else if (pb && typeof pb.value === 'boolean') {
+            pbScore = pb.value ? 100 : 0
+          }
 
           return (
             <div key={m.id} className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 p-5 group transition-all hover:border-yellow-700/50">
@@ -68,41 +93,68 @@ export default function AthletePBDashboard({ athlete, metrics, pbs }: Props) {
               <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-yellow-600/10 blur-2xl transition-opacity group-hover:bg-yellow-500/20" />
               
               <div className="flex flex-col h-full justify-between gap-4 relative z-10">
-                <div>
-                  <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
+                  <div>
                     <span className="text-xs font-medium text-gray-500">{label}</span>
-                    {m.higher_is_better ? (
-                      <span className="text-[10px] text-green-400/70 border border-green-800/30 rounded px-1.5 py-0.5">越高越好</span>
-                    ) : (
-                      <span className="text-[10px] text-blue-400/70 border border-blue-800/30 rounded px-1.5 py-0.5">越低越好</span>
-                    )}
-                  </div>
-                  <h3 className="text-sm font-semibold text-white mt-1">{m.name_zh}</h3>
-                </div>
-
-                <div className="flex items-end justify-between">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-baseline gap-1.5">
-                      {pb !== null ? (
-                        <>
-                          <span className="text-3xl font-black text-yellow-500 tracking-tight">{pb.value}</span>
-                          <span className="text-xs font-medium text-gray-500">{m.unit}</span>
-                        </>
-                      ) : (
-                        <span className="text-lg font-bold text-gray-700 italic">尚未创造</span>
-                      )}
-                    </div>
-                    {pb !== null && (
-                      <span className="text-[10px] text-gray-500 font-medium">创造于: {pb.date}</span>
-                    )}
+                    <h3 className="text-sm font-semibold text-white mt-1">{m.name_zh}</h3>
                   </div>
                   
-                  <button 
-                    onClick={() => handleOpenModal(m)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1"
-                  >
-                    🔥 刷新
-                  </button>
+                  {/* Compact PB Display in the top right corner */}
+                  <div className="flex flex-col items-end text-right">
+                    {pb !== null ? (
+                      <>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl font-black text-yellow-500 tracking-tight">{displayMetricValue(pb.value, m.unit)}</span>
+                          <span className="text-[10px] font-medium text-gray-500">{m.unit}</span>
+                        </div>
+                        <span className="text-[9px] text-gray-600 font-medium">{pb.date}</span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold text-gray-700 italic mt-1">No Record</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-end justify-between">
+                    <div className="flex flex-col gap-1">
+                      {/* Empty space since PB moved to top right */}
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleOpenModal(m)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1"
+                    >
+                      🔥 刷新
+                    </button>
+                  </div>
+                  
+                  {/* Position Progress Bar */}
+                  {pb !== null && config && m.unit !== 'boolean' && (
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="flex justify-between text-[9px] text-gray-500 font-medium">
+                        <span>0分</span>
+                        <span className="text-indigo-400">当前得分: {pbScore} 分</span>
+                        <span>100分 ({displayMetricValue(config.max, m.unit)})</span>
+                      </div>
+                      <div className="relative h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                        {/* 60 Points (Pass) Marker */}
+                        <div className="absolute top-0 bottom-0 left-[60%] w-[1px] bg-gray-500 z-10"></div>
+                        
+                        <div 
+                          className={`h-full rounded-full transition-all duration-1000 ease-out relative z-0 ${
+                            pbScore >= 60 
+                              ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' 
+                              : 'bg-gradient-to-r from-red-900 to-red-500'
+                          }`}
+                          style={{ width: `${pbScore}%` }} 
+                        />
+                      </div>
+                      <div className="flex justify-between text-[8px] text-gray-600">
+                        <span className="ml-[60%] -translate-x-1/2">及格线 ({displayMetricValue(config.min, m.unit)})</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -123,12 +175,12 @@ export default function AthletePBDashboard({ athlete, metrics, pbs }: Props) {
               <div>
                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 block">成绩数值 ({editingMetric.unit})</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type={editingMetric.unit === 's' ? 'text' : 'number'}
+                  step={editingMetric.unit === 's' ? undefined : '0.01'}
                   autoFocus
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
-                  placeholder={`输入${editingMetric.unit}`}
+                  placeholder={editingMetric.unit === 's' ? '如 4:22.96' : `输入${editingMetric.unit}`}
                   className="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none"
                 />
                 {editingMetric.higher_is_better ? (

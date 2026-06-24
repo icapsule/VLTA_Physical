@@ -32,77 +32,16 @@ export interface TestItem {
   unit: string
   higher_is_better: boolean
   record_type: 'test' | 'training'
-}
-
-export interface TestResult {
-  id: number
-  athlete_id: string
-  test_item_id: number
-  result_value: number
-  test_date: string
-  notes: string | null
-  coach_feedback: string | null
-  created_by: string
-  created_at: string
-}
-
-export interface TrainingPlan {
-  id: number
-  coach_id: string
-  title: string
-  description: string | null
-  start_date: string
-  end_date: string
-  plan_details: PlanDetails
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface PlanAssignment {
-  id: number
-  plan_id: number
-  athlete_id: string
-  assigned_at: string
-}
-
-export interface PlanProgress {
-  id: number
-  assignment_id: number
-  progress_date: string
-  completed: boolean
-  notes: string | null
-  updated_at: string
-}
-
-// JSONB plan_details structure
-export interface PlanDetails {
-  days: PlanDay[]
-}
-
-export interface PlanDay {
-  day: number
-  label: string
-  exercises: Exercise[]
-}
-
-export interface Exercise {
-  name: string
-  sets: number
-  reps?: number
-  duration_sec?: number
-  notes?: string
-}
-
-// View: athlete_latest_results
-export interface AthleteLatestResult {
-  athlete_id: string
-  full_name: string
-  test_name: string
-  unit: string
-  higher_is_better: boolean
-  result_value: number
-  test_date: string
+  in_radar: boolean
+  reg_base_min?: number | null
+  reg_base_max?: number | null
+  reg_growth_min?: number | null
+  reg_growth_max?: number | null
+  elite_base_min?: number | null
+  elite_base_max?: number | null
+  elite_growth_min?: number | null
+  elite_growth_max?: number | null
+  scoring_matrix: Record<string, any> | null
 }
 
 // Database interface for typed Supabase client
@@ -117,34 +56,10 @@ export interface Database {
         Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
         Relationships: []
       }
-      test_items: {
+      test_metrics: {
         Row: TestItem
         Insert: Omit<TestItem, 'id'>
         Update: Partial<Omit<TestItem, 'id'>>
-        Relationships: []
-      }
-      test_results: {
-        Row: TestResult
-        Insert: Omit<TestResult, 'id' | 'created_at'>
-        Update: Partial<Omit<TestResult, 'id' | 'created_at'>>
-        Relationships: []
-      }
-      training_plans: {
-        Row: TrainingPlan
-        Insert: Omit<TrainingPlan, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<TrainingPlan, 'id' | 'created_at' | 'updated_at'>>
-        Relationships: []
-      }
-      plan_assignments: {
-        Row: PlanAssignment
-        Insert: Omit<PlanAssignment, 'id' | 'assigned_at'>
-        Update: Partial<Omit<PlanAssignment, 'id' | 'assigned_at'>>
-        Relationships: []
-      }
-      plan_progress: {
-        Row: PlanProgress
-        Insert: Omit<PlanProgress, 'id' | 'updated_at'>
-        Update: Partial<Omit<PlanProgress, 'id' | 'updated_at'>>
         Relationships: []
       }
       coach_athlete_assignments: {
@@ -162,11 +77,7 @@ export interface Database {
         Relationships: []
       }
     }
-    Views: {
-      athlete_latest_results: {
-        Row: AthleteLatestResult
-      }
-    }
+    Views: Record<never, never>
     Functions: {
       get_my_role: {
         Args: Record<never, never>

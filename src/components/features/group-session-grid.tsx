@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { TestItem, Profile } from '@/lib/supabase/types'
 import { submitGroupSession } from '@/lib/actions/group-session-action'
+import { parseTimeStringToSeconds } from '@/lib/utils/format'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -65,18 +66,38 @@ export default function GroupSessionGrid({ athletes, metrics }: Props) {
     // Flatten gridData into payload
     const payloadResults: { athleteId: string, metricId: string, value: string | boolean }[] = []
     
+    let hasError = false
     selectedAthleteIds.forEach(aId => {
       selectedMetricIds.forEach(mId => {
+        if (hasError) return;
         const val = gridData[aId]?.[mId]
         if (val !== undefined && val !== '') {
+          let finalVal = val
+          if (typeof val === 'string') {
+            const m = metrics.find(x => x.id === mId)
+            if (m?.unit === 's') {
+              const seconds = parseTimeStringToSeconds(val)
+              if (!isNaN(seconds)) {
+                finalVal = seconds.toString()
+              } else {
+                setError(`无效的时间格式: ${val} (学员: ${athletes.find(a=>a.id===aId)?.full_name}, 项目: ${m?.name_zh})`)
+                setIsSubmitting(false)
+                hasError = true
+                return
+              }
+            }
+          }
+
           payloadResults.push({
             athleteId: aId,
             metricId: mId,
-            value: val
+            value: finalVal
           })
         }
       })
     })
+
+    if (hasError) return;
 
     if (payloadResults.length === 0) {
       setError('Please fill in at least one result before submitting.')
@@ -226,11 +247,11 @@ export default function GroupSessionGrid({ athletes, metrics }: Props) {
                             </label>
                           ) : (
                             <input 
-                              type="number"
-                              step="0.01"
+                              type={m.unit === 's' ? 'text' : 'number'}
+                              step={m.unit === 's' ? undefined : '0.01'}
                               value={val === undefined || typeof val === 'boolean' ? '' : val}
                               onChange={(e) => updateGridValue(athlete.id, m.id, e.target.value)}
-                              placeholder={`输入${m.unit}`}
+                              placeholder={m.unit === 's' ? '如 4:22.96' : `输入${m.unit}`}
                               className="w-full rounded bg-gray-900 border border-gray-700 px-3 py-1.5 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none"
                             />
                           )}

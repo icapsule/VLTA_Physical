@@ -27,7 +27,7 @@ export default async function AdminLayout({
   const profile = profileData as Pick<Profile, 'role'> | null
 
   if (profile?.role !== 'admin') {
-    redirect('/dashboard')
+    redirect('/profile')
   }
 
   return (

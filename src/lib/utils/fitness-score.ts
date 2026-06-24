@@ -35,57 +35,36 @@ export interface FitnessScore {
   }
 }
 
-interface GrowthConfig {
-  baseMin: number
-  baseMax: number
-  minGrowth: number
-  maxGrowth: number
-}
+// Hardcoded baselines removed. 
+// Now completely database-driven using TestItem columns.
 
-type MetricConfigMap = Record<ScoringMode, GrowthConfig>
+import type { TestItem, Gender } from '@/lib/supabase/types'
 
-// Baseline is age 9.
-const METRIC_GROWTH: Record<string, MetricConfigMap> = {
-  standing_long_jump: {
-    regular: { baseMin: 100, baseMax: 180, minGrowth: 6, maxGrowth: 8 },
-    elite:   { baseMin: 120, baseMax: 200, minGrowth: 8, maxGrowth: 10 },
-  },
-  sprint_10m: {
-    regular: { baseMin: 2.8, baseMax: 1.8, minGrowth: -0.05, maxGrowth: -0.05 },
-    elite:   { baseMin: 2.6, baseMax: 1.7, minGrowth: -0.06, maxGrowth: -0.06 },
-  },
-  sprint_20m: {
-    regular: { baseMin: 5.5, baseMax: 3.9, minGrowth: -0.15, maxGrowth: -0.12 },
-    elite:   { baseMin: 5.2, baseMax: 3.7, minGrowth: -0.18, maxGrowth: -0.15 },
-  },
-  shuttle_10x5: {
-    regular: { baseMin: 17.5, baseMax: 14.0, minGrowth: -0.3, maxGrowth: -0.4 },
-    elite:   { baseMin: 16.5, baseMax: 13.0, minGrowth: -0.4, maxGrowth: -0.5 },
-  },
-  sit_and_reach: {
-    regular: { baseMin: 0, baseMax: 20, minGrowth: 0.5, maxGrowth: 1 },
-    elite:   { baseMin: 5, baseMax: 25, minGrowth: 0.5, maxGrowth: 1 },
-  },
-  pull_up: {
-    regular: { baseMin: 0, baseMax: 8, minGrowth: 0, maxGrowth: 1 },
-    elite:   { baseMin: 0, baseMax: 15, minGrowth: 1, maxGrowth: 2 },
-  }
-}
+/** Age/Gender-based scoring configuration using JSONB matrix from Database */
+export function getScoreConfig(age: number, gender: Gender | null, mode: ScoringMode, metrics: TestItem[]): ScoreConfig[] {
+  // Cap age extrapolation between 8 and 18 for lookup
+  const lookupAge = Math.max(8, Math.min(18, age)).toString()
+  // Default to male if gender is unknown or other, just for the sake of having a baseline
+  const lookupGender = gender === 'female' ? 'female' : 'male'
 
-/** Age-based scoring configuration using Growth Factor */
-export function getScoreConfig(age: number, mode: ScoringMode): ScoreConfig[] {
-  // Cap age extrapolation between 9 and 18
-  const clampedAge = Math.max(9, Math.min(18, age))
-  const years = clampedAge - 9
-
-  return Object.keys(METRIC_GROWTH).map(metricId => {
-    const config = METRIC_GROWTH[metricId][mode]
-    return {
-      metricId,
-      min: config.baseMin + config.minGrowth * years,
-      max: config.baseMax + config.maxGrowth * years,
+  return metrics.map(m => {
+    // If scoring matrix is missing, return a dummy config (it will be ignored later)
+    if (!m.scoring_matrix || !m.scoring_matrix[mode] || !m.scoring_matrix[mode][lookupGender]) {
+      return { metricId: m.id, min: NaN, max: NaN }
     }
-  })
+
+    const standard = m.scoring_matrix[mode][lookupGender][lookupAge]
+    if (!standard) {
+      // Basic fallback if age is specifically missing but matrix exists
+      return { metricId: m.id, min: NaN, max: NaN }
+    }
+
+    return {
+      metricId: m.id,
+      min: standard.min_0,
+      max: standard.max_100,
+    }
+  }).filter(c => !isNaN(c.min) && !isNaN(c.max))
 }
 
 /**
@@ -99,29 +78,21 @@ export function calculateItemScore(value: number | boolean, config?: ScoreConfig
   if (!config) return 0;
   
   const { min, max } = config
-  const ratio = (value - min) / (max - min)
-  const clamped = Math.max(0, Math.min(1, ratio))
   
-  return Math.round(clamped * 100)
+  // Calculate how far along the value is between min and max (can be negative if worse than min)
+  const ratio = (value - min) / (max - min)
+  
+  // min maps to 60 points, max maps to 100 points. 
+  // 40 is the spread between pass (60) and perfect (100).
+  const rawScore = 60 + (ratio * 40)
+  
+  // Clamp the final score strictly between 0 and 100
+  const clamped = Math.max(0, Math.min(100, rawScore))
+  
+  return Math.round(clamped)
 }
 
-/** Maps test item ID → fitness dimension */
-export const ITEM_TO_DIMENSION: Record<string, keyof FitnessScore['dimensions']> = {
-  standing_long_jump: 'power',
-  sprint_10m: 'speed',
-  sprint_20m: 'speed',
-  shuttle_10x5: 'agility',
-  sprint_100m: 'speed',
-  sprint_200m: 'speed',
-  run_400m: 'endurance',
-  run_800m: 'endurance',
-  run_1000m: 'endurance',
-  run_3000m: 'endurance',
-  run_5000m: 'endurance',
-  sit_and_reach: 'flexibility',
-  pull_up: 'strength',
-  push_up: 'strength',
-}
+// Removed hardcoded ITEM_TO_DIMENSION since dimension comes dynamically from the TestItem dictionary
 
 export const DIMENSION_LABELS: Record<keyof FitnessScore['dimensions'], string> = {
   speed: '⚡️ 速度',
@@ -141,28 +112,32 @@ export const DIMENSION_WEIGHTS: Record<keyof FitnessScore['dimensions'], number>
   strength: 0.10,
 }
 
-/**
- * Calculates a full fitness score from a map of test results.
- * @param results - { [metricId]: resultValue (number | boolean) }
- * @param age - Athlete's age to use appropriate scoring norms
- * @param mode - 'regular' or 'elite' standards
- */
 export function calculateFitnessScore(
   results: Record<string, number | boolean>,
+  metrics: TestItem[],
   age: number = 10,
+  gender: Gender | null = 'male',
   mode: ScoringMode = 'regular'
 ): FitnessScore {
   // Accumulate raw item scores per dimension
   const dimensionRaws: Record<string, number[]> = {}
-  const scoreConfigList = getScoreConfig(age, mode)
+  const scoreConfigList = getScoreConfig(age, gender, mode, metrics)
 
   for (const [metricId, value] of Object.entries(results)) {
     if (value === undefined || value === null) continue
 
-    const dimension = ITEM_TO_DIMENSION[metricId]
+    const metricDefinition = metrics.find(m => m.id === metricId)
+    if (!metricDefinition) continue
+
+    // Skip if the metric is explicitly opted out of radar
+    if (metricDefinition.in_radar === false) continue
+
+    const dimension = metricDefinition.dimension as keyof FitnessScore['dimensions']
     if (!dimension) continue
 
     const config = scoreConfigList.find(c => c.metricId === metricId)
+    if (!config && typeof value !== 'boolean') continue // Skip if no config, instead of dragging down to 0
+    
     const score = calculateItemScore(value, config)
     
     if (!dimensionRaws[dimension]) dimensionRaws[dimension] = []

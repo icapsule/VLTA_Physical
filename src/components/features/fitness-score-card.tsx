@@ -34,15 +34,16 @@ export default function FitnessScoreCard({ score }: FitnessScoreCardProps) {
   }, [])
 
   return (
-    <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+    <div className="h-full flex flex-col rounded-2xl border border-gray-800 bg-gray-900 p-6">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
         综合体能评分
       </h2>
 
-      {/* SVG Score Circle */}
-      <div className="flex justify-center">
-        <div className="relative flex items-center justify-center">
-          <svg width="140" height="140" viewBox="0 0 140 140" aria-label={`体能评分 ${total} 分`}>
+      <div className="flex-1 flex flex-col justify-center">
+        {/* SVG Score Circle */}
+        <div className="flex justify-center">
+          <div className="relative flex items-center justify-center">
+            <svg width="140" height="140" viewBox="0 0 140 140" aria-label={`体能评分 ${total} 分`}>
             {/* Background circle */}
             <circle
               cx="70"
@@ -102,6 +103,7 @@ export default function FitnessScoreCard({ score }: FitnessScoreCardProps) {
           尚无测试数据，评分将在录入成绩后显示
         </p>
       )}
+      </div>
     </div>
   )
 }

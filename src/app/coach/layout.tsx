@@ -28,7 +28,7 @@ export default async function CoachLayout({
   const profile = profileData as Pick<Profile, 'role'> | null
 
   if (!profile || (profile.role !== 'coach' && profile.role !== 'admin' && profile.role !== 'athlete')) {
-    redirect('/dashboard')
+    redirect('/profile')
   }
 
   return (
@@ -41,7 +41,6 @@ export default async function CoachLayout({
           <div className="flex items-center gap-4 text-sm text-gray-400">
             <a href="/coach/athletes" className="hover:text-white">学员管理</a>
             <a href="/coach/sessions/new" className="text-emerald-400 hover:text-emerald-300">批量集训录入</a>
-            <a href="/coach/plans" className="hover:text-white">训练计划</a>
             {profile?.role === 'admin' && (
               <a href="/admin/users" className="text-yellow-400 hover:text-yellow-300">
                 Admin ⚙️

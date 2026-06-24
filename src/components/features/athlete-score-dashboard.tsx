@@ -5,50 +5,36 @@ import { calculateFitnessScore, ScoringMode } from '@/lib/utils/fitness-score'
 import FitnessRadarChart from './fitness-radar-chart'
 import FitnessScoreCard from './fitness-score-card'
 
+import type { TestItem, Gender } from '@/lib/supabase/types'
+
 interface AthleteScoreDashboardProps {
   results: Record<string, number | boolean>
+  metrics: TestItem[]
   age: number
+  gender: Gender | null
+  mode?: ScoringMode
+  onModeChange?: (mode: ScoringMode) => void
 }
 
-export default function AthleteScoreDashboard({ results, age }: AthleteScoreDashboardProps) {
-  const [mode, setMode] = useState<ScoringMode>('regular')
+export default function AthleteScoreDashboard({ results, metrics, age, gender, mode: controlledMode, onModeChange }: AthleteScoreDashboardProps) {
+  const [localMode, setLocalMode] = useState<ScoringMode>('regular')
+  
+  const mode = controlledMode ?? localMode
+  const handleModeChange = (newMode: ScoringMode) => {
+    if (onModeChange) onModeChange(newMode)
+    else setLocalMode(newMode)
+  }
 
-  const fitnessScore = calculateFitnessScore(results, age, mode)
+  const fitnessScore = calculateFitnessScore(results, metrics, age, gender, mode)
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
-      <div className="flex justify-end">
-        <div className="inline-flex rounded-lg border border-gray-800 bg-gray-900 p-1">
-          <button
-            onClick={() => setMode('regular')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              mode === 'regular'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            普通青少年标准
-          </button>
-          <button
-            onClick={() => setMode('elite')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              mode === 'elite'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            精英运动员标准
-          </button>
-        </div>
-      </div>
-
       {/* Score + Radar */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <FitnessRadarChart score={fitnessScore} />
+        <div className="lg:col-span-2 h-full">
+          <FitnessRadarChart score={fitnessScore} metrics={metrics} />
         </div>
-        <div>
+        <div className="h-full">
           <FitnessScoreCard score={fitnessScore} />
         </div>
       </div>

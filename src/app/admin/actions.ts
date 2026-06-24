@@ -66,26 +66,12 @@ export async function mergeAthletes(virtualId: string, realId: string) {
       .eq('athlete_id', virtualId)
     if (errAssessments) throw errAssessments
 
-    // 4.5 Update test_results
-    const { error: err1 } = await supabase
-      .from('test_results')
-      .update({ athlete_id: realId })
-      .eq('athlete_id', virtualId)
-    if (err1) throw err1
-
     // 3. Update assessment_results
     const { error: err2 } = await supabase
       .from('assessment_results')
       .update({ athlete_id: realId })
       .eq('athlete_id', virtualId)
     if (err2) throw err2
-
-    // 4. Update plan_assignments
-    const { error: err3 } = await supabase
-      .from('plan_assignments')
-      .update({ athlete_id: realId })
-      .eq('athlete_id', virtualId)
-    if (err3) throw err3
 
     // 5. Update coach_athlete_assignments
     const { error: err4 } = await supabase
@@ -107,5 +93,48 @@ export async function mergeAthletes(virtualId: string, realId: string) {
   } catch (error: any) {
     console.error('Merge Athletes Error:', error)
     return { success: false, error: error.message || 'Failed to merge athletes' }
+  }
+}
+
+export async function toggleMetricInRadar(metricId: string, inRadar: boolean) {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    // 1. Authenticate & Authorize
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: 'Unauthorized' }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      return { success: false, error: 'Permission denied. Only admins can configure metrics.' }
+    }
+
+    // 2. Update DB
+    const { error } = await supabase
+      .from('test_metrics')
+      .update({ in_radar: inRadar })
+      .eq('id', metricId)
+
+    if (error) {
+      console.error('toggleMetricInRadar DB Error:', error)
+      return { success: false, error: 'Database update failed' }
+    }
+
+    revalidatePath('/admin/metrics')
+    revalidatePath('/coach/athletes')
+    revalidatePath('/profile')
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('toggleMetricInRadar exception:', error)
+    return { success: false, error: error.message || 'Internal error' }
   }
 }

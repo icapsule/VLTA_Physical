@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile, UserRole } from '@/lib/supabase/types'
 import { AddVirtualAthleteModal } from '@/components/features/add-virtual-athlete-modal'
 import { MergeAthleteModal } from '@/components/features/merge-athlete-modal'
+import { EditUserProfileModal } from '@/components/features/edit-user-profile-modal'
 
 const ROLES: UserRole[] = ['athlete', 'coach', 'admin']
 
@@ -31,6 +32,7 @@ export default function AdminUsersPage() {
   const [successId, setSuccessId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [mergeUser, setMergeUser] = useState<Profile | null>(null)
+  const [editingUser, setEditingUser] = useState<Profile | null>(null)
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -125,9 +127,13 @@ export default function AdminUsersPage() {
                   }`}
                 >
                    <td className="px-4 py-3">
-                     <a href={`/coach/athletes/${u.id}`} className="font-medium text-white hover:text-indigo-300">
-                       {u.full_name}
-                     </a>
+                     <button 
+                       onClick={() => setEditingUser(u)} 
+                       className="font-medium text-white hover:text-indigo-300 text-left transition-colors flex items-center gap-1"
+                       title="编辑用户基本资料"
+                     >
+                       {u.full_name} ✏️
+                     </button>
                      <div className="flex items-center mt-1">
                        <p className="text-xs text-gray-500">{u.id.slice(0, 8)}...</p>
                        {u.id.startsWith('virt_') && (
@@ -190,6 +196,13 @@ export default function AdminUsersPage() {
         isOpen={!!mergeUser}
         virtualUser={mergeUser}
         onClose={() => setMergeUser(null)}
+        onSuccess={fetchUsers}
+      />
+
+      <EditUserProfileModal
+        isOpen={!!editingUser}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
         onSuccess={fetchUsers}
       />
     </div>

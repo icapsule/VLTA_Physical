@@ -84,5 +84,5 @@ export default async function IndexPage() {
   if (role === 'athlete') redirect('/profile')
 
   // Default fallback (should not be reached)
-  redirect('/dashboard')
+  redirect('/profile')
 }
