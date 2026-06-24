@@ -1,17 +1,19 @@
 /**
  * Fitness Score Algorithm
  *
- * Based on PRD v2 Section 9: linear mapping of raw test values to 0-100 scores,
- * then weighted average across 5 dimensions (Speed, Power, Endurance, Flexibility, Strength).
+ * Dual-Mode Yearly Scoring System (Regular vs Elite)
+ * Uses a baseline at Age 9, and linearly extrapolates up to Age 18
+ * using growth factors.
  */
 
+export type ScoringMode = 'regular' | 'elite'
+
 export interface ScoreConfig {
-  testItemId: number
+  metricId: string
   /** Performance value that maps to 0 (worst acceptable) */
   min: number
   /** Performance value that maps to 100 (elite level) */
   max: number
-  higherIsBetter: boolean
 }
 
 export interface DimensionScore {
@@ -29,75 +31,140 @@ export interface FitnessScore {
     endurance: DimensionScore
     flexibility: DimensionScore
     strength: DimensionScore
+    agility: DimensionScore
   }
 }
 
-/** Scoring configuration per test item (PRD §9) */
-export const SCORE_CONFIG: ScoreConfig[] = [
-  { testItemId: 1, min: 100, max: 250, higherIsBetter: true  }, // 立定跳远 cm
-  { testItemId: 2, min: 0,   max: 25,  higherIsBetter: true  }, // 坐位体前屈 cm
-  { testItemId: 3, min: 12,  max: 6,   higherIsBetter: false }, // 50米跑 秒
-  { testItemId: 4, min: 480, max: 200, higherIsBetter: false }, // 1000米跑 秒
-  { testItemId: 5, min: 0,   max: 20,  higherIsBetter: true  }, // 引体向上 次
-  { testItemId: 6, min: 1,   max: 15,  higherIsBetter: true  }, // Beep Test 级
-  { testItemId: 7, min: 25,  max: 13,  higherIsBetter: false }, // 蜘蛛跑 秒
-]
+interface GrowthConfig {
+  baseMin: number
+  baseMax: number
+  minGrowth: number
+  maxGrowth: number
+}
+
+type MetricConfigMap = Record<ScoringMode, GrowthConfig>
+
+// Baseline is age 9.
+const METRIC_GROWTH: Record<string, MetricConfigMap> = {
+  standing_long_jump: {
+    regular: { baseMin: 100, baseMax: 180, minGrowth: 6, maxGrowth: 8 },
+    elite:   { baseMin: 120, baseMax: 200, minGrowth: 8, maxGrowth: 10 },
+  },
+  sprint_10m: {
+    regular: { baseMin: 2.8, baseMax: 1.8, minGrowth: -0.05, maxGrowth: -0.05 },
+    elite:   { baseMin: 2.6, baseMax: 1.7, minGrowth: -0.06, maxGrowth: -0.06 },
+  },
+  sprint_20m: {
+    regular: { baseMin: 5.5, baseMax: 3.9, minGrowth: -0.15, maxGrowth: -0.12 },
+    elite:   { baseMin: 5.2, baseMax: 3.7, minGrowth: -0.18, maxGrowth: -0.15 },
+  },
+  shuttle_10x5: {
+    regular: { baseMin: 17.5, baseMax: 14.0, minGrowth: -0.3, maxGrowth: -0.4 },
+    elite:   { baseMin: 16.5, baseMax: 13.0, minGrowth: -0.4, maxGrowth: -0.5 },
+  },
+  sit_and_reach: {
+    regular: { baseMin: 0, baseMax: 20, minGrowth: 0.5, maxGrowth: 1 },
+    elite:   { baseMin: 5, baseMax: 25, minGrowth: 0.5, maxGrowth: 1 },
+  },
+  pull_up: {
+    regular: { baseMin: 0, baseMax: 8, minGrowth: 0, maxGrowth: 1 },
+    elite:   { baseMin: 0, baseMax: 15, minGrowth: 1, maxGrowth: 2 },
+  }
+}
+
+/** Age-based scoring configuration using Growth Factor */
+export function getScoreConfig(age: number, mode: ScoringMode): ScoreConfig[] {
+  // Cap age extrapolation between 9 and 18
+  const clampedAge = Math.max(9, Math.min(18, age))
+  const years = clampedAge - 9
+
+  return Object.keys(METRIC_GROWTH).map(metricId => {
+    const config = METRIC_GROWTH[metricId][mode]
+    return {
+      metricId,
+      min: config.baseMin + config.minGrowth * years,
+      max: config.baseMax + config.maxGrowth * years,
+    }
+  })
+}
 
 /**
  * Maps a single test result value to a 0-100 score.
  */
-export function calculateItemScore(value: number, config: ScoreConfig): number {
-  const { min, max, higherIsBetter } = config
+export function calculateItemScore(value: number | boolean, config?: ScoreConfig): number {
+  if (typeof value === 'boolean') {
+    return value ? 100 : 0;
+  }
+  
+  if (!config) return 0;
+  
+  const { min, max } = config
   const ratio = (value - min) / (max - min)
-  const clamped = Math.max(0, Math.min(1, higherIsBetter ? ratio : 1 - ratio))
+  const clamped = Math.max(0, Math.min(1, ratio))
+  
   return Math.round(clamped * 100)
 }
 
 /** Maps test item ID → fitness dimension */
-const ITEM_TO_DIMENSION: Record<number, keyof FitnessScore['dimensions']> = {
-  1: 'power',       // 立定跳远
-  2: 'flexibility', // 坐位体前屈
-  3: 'speed',       // 50米跑
-  4: 'endurance',   // 1000米跑
-  5: 'strength',    // 引体向上
-  6: 'endurance',   // Beep Test
-  7: 'speed',       // 蜘蛛跑
+export const ITEM_TO_DIMENSION: Record<string, keyof FitnessScore['dimensions']> = {
+  standing_long_jump: 'power',
+  sprint_10m: 'speed',
+  sprint_20m: 'speed',
+  shuttle_10x5: 'agility',
+  sprint_100m: 'speed',
+  sprint_200m: 'speed',
+  run_400m: 'endurance',
+  run_800m: 'endurance',
+  run_1000m: 'endurance',
+  run_3000m: 'endurance',
+  run_5000m: 'endurance',
+  sit_and_reach: 'flexibility',
+  pull_up: 'strength',
+  push_up: 'strength',
 }
 
-const DIMENSION_LABELS: Record<keyof FitnessScore['dimensions'], string> = {
-  speed: '速度',
-  power: '爆发力',
-  endurance: '耐力',
-  flexibility: '柔韧性',
-  strength: '力量',
+export const DIMENSION_LABELS: Record<keyof FitnessScore['dimensions'], string> = {
+  speed: '⚡️ 速度',
+  power: '💥 爆发力',
+  endurance: '🫁 耐力',
+  flexibility: '🐍 柔韧性',
+  strength: '🦾 力量',
+  agility: '🌪️ 敏捷性',
 }
 
-const DIMENSION_WEIGHTS: Record<keyof FitnessScore['dimensions'], number> = {
-  speed: 0.25,
-  power: 0.25,
-  endurance: 0.25,
-  flexibility: 0.15,
+export const DIMENSION_WEIGHTS: Record<keyof FitnessScore['dimensions'], number> = {
+  speed: 0.20,
+  power: 0.20,
+  agility: 0.20,
+  endurance: 0.20,
+  flexibility: 0.10,
   strength: 0.10,
 }
 
 /**
  * Calculates a full fitness score from a map of test results.
- * @param results - { [testItemId]: resultValue }
+ * @param results - { [metricId]: resultValue (number | boolean) }
+ * @param age - Athlete's age to use appropriate scoring norms
+ * @param mode - 'regular' or 'elite' standards
  */
 export function calculateFitnessScore(
-  results: Record<number, number>
+  results: Record<string, number | boolean>,
+  age: number = 10,
+  mode: ScoringMode = 'regular'
 ): FitnessScore {
   // Accumulate raw item scores per dimension
   const dimensionRaws: Record<string, number[]> = {}
+  const scoreConfigList = getScoreConfig(age, mode)
 
-  for (const config of SCORE_CONFIG) {
-    const value = results[config.testItemId]
-    if (value === undefined) continue
+  for (const [metricId, value] of Object.entries(results)) {
+    if (value === undefined || value === null) continue
 
-    const dimension = ITEM_TO_DIMENSION[config.testItemId]
+    const dimension = ITEM_TO_DIMENSION[metricId]
     if (!dimension) continue
 
+    const config = scoreConfigList.find(c => c.metricId === metricId)
     const score = calculateItemScore(value, config)
+    
     if (!dimensionRaws[dimension]) dimensionRaws[dimension] = []
     dimensionRaws[dimension].push(score)
   }

@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, UserRole } from '@/lib/supabase/types'
+import { AddVirtualAthleteModal } from '@/components/features/add-virtual-athlete-modal'
+import { MergeAthleteModal } from '@/components/features/merge-athlete-modal'
 
 const ROLES: UserRole[] = ['athlete', 'coach', 'admin']
 
@@ -27,8 +29,10 @@ export default function AdminUsersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [successId, setSuccessId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [mergeUser, setMergeUser] = useState<Profile | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -75,7 +79,15 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">用户管理</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">用户管理</h1>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          + 新增虚拟学员
+        </button>
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-400">
@@ -99,9 +111,9 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
                   修改角色
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  注册时间
-                </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    注册时间
+                  </th>
               </tr>
             </thead>
             <tbody>
@@ -112,10 +124,22 @@ export default function AdminUsersPage() {
                     successId === u.id ? 'bg-green-900/10' : 'hover:bg-gray-800/30'
                   }`}
                 >
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-white">{u.full_name}</p>
-                    <p className="text-xs text-gray-500">{u.id.slice(0, 8)}...</p>
-                  </td>
+                   <td className="px-4 py-3">
+                     <a href={`/coach/athletes/${u.id}`} className="font-medium text-white hover:text-indigo-300">
+                       {u.full_name}
+                     </a>
+                     <div className="flex items-center mt-1">
+                       <p className="text-xs text-gray-500">{u.id.slice(0, 8)}...</p>
+                       {u.id.startsWith('virt_') && (
+                         <button
+                           onClick={() => setMergeUser(u)}
+                           className="ml-2 rounded border border-indigo-700/50 bg-indigo-900/30 px-2 py-0.5 text-[10px] text-indigo-400 hover:bg-indigo-800/50"
+                         >
+                           🔗 关联真实账号
+                         </button>
+                       )}
+                     </div>
+                   </td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_COLOR[u.role]}`}
@@ -155,6 +179,19 @@ export default function AdminUsersPage() {
           </table>
         </div>
       )}
+
+      <AddVirtualAthleteModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={fetchUsers} 
+      />
+
+      <MergeAthleteModal
+        isOpen={!!mergeUser}
+        virtualUser={mergeUser}
+        onClose={() => setMergeUser(null)}
+        onSuccess={fetchUsers}
+      />
     </div>
   )
 }

@@ -26,13 +26,12 @@ export interface Profile {
 }
 
 export interface TestItem {
-  id: number
-  name: string
+  id: string
+  name_zh: string
+  dimension: string
   unit: string
-  description: string | null
   higher_is_better: boolean
-  sort_order: number
-  is_active: boolean
+  record_type: 'test' | 'training'
 }
 
 export interface TestResult {

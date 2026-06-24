@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { calculateFitnessScore } from '@/lib/utils/fitness-score'
-import FitnessScoreCard from '@/components/features/fitness-score-card'
+import FitnessScoreToggle from '@/components/features/fitness-score-toggle'
 import RecentTestsCard from '@/components/features/recent-tests-card'
 import type { TestResult, Profile } from '@/lib/supabase/types'
 
@@ -88,9 +88,9 @@ export default async function DashboardPage() {
 
       {/* 3-column grid */}
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Fitness Score Card */}
+        {/* Fitness Score Toggle (Radar / Card) */}
         <div className="md:col-span-1">
-          <FitnessScoreCard score={fitnessScore} />
+          <FitnessScoreToggle score={fitnessScore} />
         </div>
 
         {/* Recent Tests */}

@@ -1,0 +1,44 @@
+# Dependencies and package manager cache
+node_modules
+.pnpm-store
+.npm
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output
+.next
+out
+dist
+build
+
+# IDE / Editor configurations
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Git folder and repository configs
+.git
+.gitignore
+.github
+
+# Environment files (sensitive/local configurations)
+.env
+.env.local
+.env*.local
+*.env
+
+# System & diagnostic logs
+logs
+*.log
+
+# Documentation & Project Spec
+*.md
+LICENSE
+.antigravity

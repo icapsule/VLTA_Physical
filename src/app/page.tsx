@@ -28,20 +28,25 @@ export default async function IndexPage() {
     .eq('id', userId)
     .single()
 
+  const user = await currentUser()
+  const email = user?.emailAddresses[0]?.emailAddress
+  const isSuperAdmin = email === 'cppemu@gmail.com'
+
   // 2. [JIT 同步] 如果是首次从 Clerk 登录的新用户，立即为他创建基础资料档案！
   if (!profile) {
-    const user = await currentUser()
     const fullName = user?.firstName && user?.lastName 
       ? `${user.firstName} ${user.lastName}` 
       : (user?.firstName || '新学员')
     
-    // 插入一条新的默认 athlete 数据记录
+    const assignedRole = isSuperAdmin ? 'admin' : 'athlete'
+    
+    // 插入一条新的默认 athlete 数据记录 (Super Admin 例外)
     const { data: newProfile, error } = await supabase
       .from('profiles')
       .insert({
         id: userId,
         full_name: fullName,
-        role: 'athlete', // 新用户永远默认是 athlete
+        role: assignedRole,
         avatar_url: user?.imageUrl ?? null,
       })
       .select('role')
@@ -59,13 +64,25 @@ export default async function IndexPage() {
       )
     }
     profile = newProfile
+  } else if (isSuperAdmin && profile.role !== 'admin') {
+    // 强制将 cppemu@gmail.com 升级为 admin，即使之前由于任何原因被降级
+    const { data: updatedProfile, error } = await supabase
+      .from('profiles')
+      .update({ role: 'admin' })
+      .eq('id', userId)
+      .select('role')
+      .single()
+    if (!error && updatedProfile) {
+      profile = updatedProfile
+    }
   }
 
   // 3. 动态角色重定向路由网关
   const role = profile?.role ?? 'athlete'
-  if (role === 'coach') redirect('/coach/dashboard')
+  if (role === 'coach') redirect('/coach/athletes')
   if (role === 'admin') redirect('/admin/users')
-  
-  // 默认学员主页
+  if (role === 'athlete') redirect('/profile')
+
+  // Default fallback (should not be reached)
   redirect('/dashboard')
 }

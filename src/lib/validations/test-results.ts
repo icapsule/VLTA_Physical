@@ -8,7 +8,7 @@ export const testEntrySchema = z.object({
     .refine((d) => new Date(d) <= new Date(), '测试日期不能是未来日期'),
   entries: z.array(
     z.object({
-      test_item_id: z.number(),
+      test_item_id: z.string(),
       result_value: z.string(),
       notes: z.string().optional(),
     })

@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { SignOutButton } from '@clerk/nextjs'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/supabase/types'
 
@@ -26,7 +27,7 @@ export default async function CoachLayout({
 
   const profile = profileData as Pick<Profile, 'role'> | null
 
-  if (!profile || (profile.role !== 'coach' && profile.role !== 'admin')) {
+  if (!profile || (profile.role !== 'coach' && profile.role !== 'admin' && profile.role !== 'athlete')) {
     redirect('/dashboard')
   }
 
@@ -34,18 +35,22 @@ export default async function CoachLayout({
     <div className="min-h-screen bg-gray-950 text-white">
       <nav className="border-b border-gray-800 bg-gray-900">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <a href="/coach/dashboard" className="text-lg font-bold text-indigo-400">
+          <a href="/coach/athletes" className="text-lg font-bold text-indigo-400">
             🎾 VLTA Coach
           </a>
           <div className="flex items-center gap-4 text-sm text-gray-400">
-            <a href="/coach/dashboard" className="hover:text-white">全队总览</a>
             <a href="/coach/athletes" className="hover:text-white">学员管理</a>
+            <a href="/coach/sessions/new" className="text-emerald-400 hover:text-emerald-300">批量集训录入</a>
             <a href="/coach/plans" className="hover:text-white">训练计划</a>
             {profile?.role === 'admin' && (
               <a href="/admin/users" className="text-yellow-400 hover:text-yellow-300">
                 Admin ⚙️
               </a>
             )}
+            {/* Logout button */}
+            <SignOutButton>
+              <button className="ml-4 rounded bg-gray-700 px-3 py-1 text-sm hover:bg-gray-600">退出登录</button>
+            </SignOutButton>
           </div>
         </div>
       </nav>

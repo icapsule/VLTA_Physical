@@ -24,13 +24,13 @@ export default function BulkTestEntryForm({
 }: BulkTestEntryFormProps) {
   const router = useRouter()
   const [testDate, setTestDate] = useState(new Date().toISOString().split('T')[0])
-  const [entries, setEntries] = useState<Record<number, { value: string; notes: string }>>({})
+  const [entries, setEntries] = useState<Record<string, { value: string; notes: string }>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   const handleValueChange = useCallback(
-    (itemId: number, value: string) => {
+    (itemId: string, value: string) => {
       setEntries((prev) => ({
         ...prev,
         [itemId]: { ...prev[itemId], value },
@@ -40,7 +40,7 @@ export default function BulkTestEntryForm({
   )
 
   const handleNotesChange = useCallback(
-    (itemId: number, notes: string) => {
+    (itemId: string, notes: string) => {
       setEntries((prev) => ({
         ...prev,
         [itemId]: { ...prev[itemId], notes },
@@ -58,7 +58,7 @@ export default function BulkTestEntryForm({
       const filledEntries = Object.entries(entries)
         .filter(([, v]) => v.value && v.value.trim() !== '')
         .map(([itemId, v]) => ({
-          test_item_id: Number(itemId),
+          test_item_id: itemId,
           result_value: v.value,
           notes: v.notes ?? '',
         }))
@@ -138,7 +138,7 @@ export default function BulkTestEntryForm({
           <tbody>
             {testItems.map((item) => (
               <tr key={item.id} className="border-t border-gray-700">
-                <td className="px-4 py-3 text-gray-300">{item.name}</td>
+                <td className="px-4 py-3 text-gray-300">{item.name_zh}</td>
                 <td className="px-4 py-3 text-gray-500">{item.unit}</td>
                 <td className="px-4 py-3">
                   <input

@@ -35,10 +35,11 @@ export default async function AdminLayout({
       <nav className="border-b border-yellow-900/50 bg-gray-900">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <span className="text-lg font-bold text-yellow-400">⚙️ VLTA Admin</span>
-          <div className="flex items-center gap-4 text-sm text-gray-400">
-            <a href="/admin/users" className="hover:text-white">用户管理</a>
-            <a href="/coach/dashboard" className="text-indigo-400 hover:text-indigo-300">
-              Coach 视图
+          <div className="flex items-center gap-6 text-sm text-gray-400">
+            <a href="/admin/users" className="hover:text-white transition-colors">用户管理</a>
+            <a href="/admin/metrics" className="hover:text-white transition-colors">Test & Training Metrics</a>
+            <a href="/coach/athletes" className="text-indigo-400 hover:text-indigo-300 ml-4 border-l border-gray-800 pl-4">
+              &larr; 回到教练端
             </a>
           </div>
         </div>
