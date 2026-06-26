@@ -4,7 +4,8 @@ import type { NextRequest, NextFetchEvent } from 'next/server'
 // 定义哪些路由是完全公开的（不需要登录）
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
-  '/sign-up(.*)'
+  '/sign-up(.*)',
+  '/report/(.*)'
 ])
 
 // 初始化 Clerk Middleware
