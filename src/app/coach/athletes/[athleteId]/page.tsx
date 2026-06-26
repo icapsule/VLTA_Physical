@@ -6,6 +6,7 @@ import AthleteProfileContainer from '@/components/features/athlete-profile-conta
 import AthleteProgressChart from '@/components/features/athlete-progress-chart'
 import AssessmentLogTable from '@/components/features/assessment-log-table'
 import { displayMetricValue } from '@/lib/utils/format'
+import CopyShareLinkButton from '@/components/features/copy-share-link-button'
 
 export default async function AthleteDetailPage({ params }: { params: Promise<{ athleteId: string }> }) {
   const { athleteId } = await params
@@ -107,10 +108,11 @@ export default async function AthleteDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <a href="/coach/athletes" className="text-sm text-indigo-400 hover:text-indigo-300">
           ← 返回学员列表
         </a>
+        <CopyShareLinkButton token={athlete.share_token} />
       </div>
 
       {/* Shared Dashboard Container */}

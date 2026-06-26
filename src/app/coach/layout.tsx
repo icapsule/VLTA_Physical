@@ -21,11 +21,11 @@ export default async function CoachLayout({
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as Pick<Profile, 'role'> | null
+  const profile = profileData as Pick<Profile, 'role' | 'full_name'> | null
 
   if (!profile || (profile.role !== 'coach' && profile.role !== 'admin' && profile.role !== 'athlete')) {
     redirect('/profile')
@@ -36,7 +36,7 @@ export default async function CoachLayout({
       <nav className="border-b border-gray-800 bg-gray-900">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <a href="/coach/athletes" className="text-lg font-bold text-indigo-400">
-            🎾 VLTA Coach
+            🎾 VTA Athlete Club | Coach {profile?.full_name || 'Admin'}
           </a>
           <div className="flex items-center gap-4 text-sm text-gray-400">
             <a href="/coach/athletes" className="hover:text-white">学员管理</a>

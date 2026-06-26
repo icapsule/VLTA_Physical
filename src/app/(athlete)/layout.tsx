@@ -38,8 +38,14 @@ export default async function AthleteLayout({
     <div className="min-h-screen bg-gray-950 text-white">
       <nav className="border-b border-gray-800 bg-gray-900">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="text-lg font-bold text-indigo-400">🎾 VLTA Athlete</div>
+          <div className="text-lg font-bold text-indigo-400">
+            🎾 VTA Athlete Club <span className="text-gray-500 font-normal mx-2">|</span> 
+            <span className="text-white">体能表现追踪看板 (Performance Tracking Dashboard)</span>
+          </div>
           <div className="flex items-center gap-4 text-sm text-gray-400">
+            <Link href="/profile/edit" className="hover:text-white transition-colors">
+              ✍️ 编辑资料
+            </Link>
             <SignOutButton>
               <button className="ml-4 rounded bg-gray-700 px-3 py-1 text-sm hover:bg-gray-600">退出登录</button>
             </SignOutButton>

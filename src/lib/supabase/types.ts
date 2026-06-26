@@ -20,6 +20,7 @@ export interface Profile {
   height_cm: number | null
   weight_kg: number | null
   avatar_url: string | null
+  share_token: string
   role: UserRole
   created_at: string
   updated_at: string

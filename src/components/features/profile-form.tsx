@@ -10,13 +10,14 @@ interface ProfileFormProps {
   profile: Profile | null
   userEmail: string
   userId: string
+  onSuccess?: () => void
 }
 
 /**
  * ProfileForm — VLTA 2.0 Client Component.
  * Fully decoupled from Supabase Object Storage. Relies on Clerk Server Actions for IO.
  */
-export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
+export default function ProfileForm({ profile, userEmail, onSuccess }: ProfileFormProps) {
   const [formData, setFormData] = useState<ProfileFormData>({
     full_name: profile?.full_name ?? '',
     phone: profile?.phone ?? '',
@@ -67,11 +68,14 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
         setServerError(response.error)
       } else {
         setSuccess(true)
+        if (onSuccess) {
+          onSuccess()
+        }
       }
       
       setLoading(false)
     },
-    [formData]
+    [formData, onSuccess]
   )
 
   return (

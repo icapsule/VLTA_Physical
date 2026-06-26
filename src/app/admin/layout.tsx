@@ -20,11 +20,11 @@ export default async function AdminLayout({
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as Pick<Profile, 'role'> | null
+  const profile = profileData as Pick<Profile, 'role' | 'full_name'> | null
 
   if (profile?.role !== 'admin') {
     redirect('/profile')
@@ -34,9 +34,9 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-gray-950 text-white">
       <nav className="border-b border-yellow-900/50 bg-gray-900">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <span className="text-lg font-bold text-yellow-400">⚙️ VLTA Admin</span>
+          <span className="text-lg font-bold text-yellow-400">🎾 VTA Athlete Club | Admin {profile?.full_name || ''}</span>
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/admin/users" className="hover:text-white transition-colors">用户管理</a>
+            <a href="/admin/users" className="hover:text-white transition-colors">User Management</a>
             <a href="/admin/metrics" className="hover:text-white transition-colors">Test & Training Metrics</a>
             <a href="/coach/athletes" className="text-indigo-400 hover:text-indigo-300 ml-4 border-l border-gray-800 pl-4">
               &larr; 回到教练端

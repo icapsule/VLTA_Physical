@@ -190,4 +190,16 @@ Sprint 4: 算法与报表打磨 (✅ 100% 完成)
 
 - Athlete 注册后, 可以用多维质量评估表 或 评分卡（Scorecard） 100分制, 综合评估 球员的体能水平, 并且可以根据评分卡来推荐训练计划    
 
+---
+
+## 5. Future Roadmap / Backlog (待开发需求池)
+
+- **[Feature] Hybrid Role (Coach as Athlete)**: 允许 `admin` 或 `coach` 角色的账号全面继承 `athlete` 的体测记录与查看大屏权限。
+  - **架构方案**：打破体测面板的 `role = 'athlete'` 硬性隔离墙。在教练端顶部导航栏新增“👤 我的体能档案”专属入口，点击后传入当前教练/Admin的 ID 进行体侧大屏渲染。并在“成绩批量录入”页面的下拉列表中，强制注入当前教练/Admin账号，使其能够实现自我体测打卡。
+
+- **[Feature] Gamification & Social Leaderboard (训练狂魔排行榜与勋章系统)**: 引入轻量级社交属性，激发学员良性竞争。
+  - **架构方案**：零数据表改动。通过聚合查询 `assessment_results` 中 `record_type = 'training'` 且 `is_passed = true` 的记录数，按照 `1次 = 1小时` 换算出“累计训练时长”与“连续打卡周数”。
+  - **UI 呈现**：在学员 Dashboard 增加精美的 Top 5 榜单 Widget。采用 `名 + 姓氏首字母`（如 Lucas H.）脱敏显示保护隐私，并在榜单底部动态展示当前学员的排名差距。
+  - **未来扩展**：支持基于累计小时数（50H/100H）的数字徽章（Badges）与连胜火焰（Streaks）特效。
+
 

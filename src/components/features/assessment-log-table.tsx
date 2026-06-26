@@ -70,9 +70,9 @@ export default function AssessmentLogTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="border-b border-gray-700 text-left text-xs text-gray-500">
+    <div className="max-h-[600px] overflow-y-auto overflow-x-auto rounded-lg border border-gray-800/50">
+      <table className="w-full text-sm relative">
+        <thead className="sticky top-0 z-10 bg-gray-900 text-left text-xs text-gray-500 shadow-sm">
           <tr>
             <th className="pb-2 pr-4">日期</th>
             <th className="pb-2 pr-4">项目</th>
