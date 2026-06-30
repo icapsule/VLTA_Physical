@@ -1,0 +1,38 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # 每天 UTC 时间上午 10:00 运行一次 (北京时间 18:00)
+    - cron: '0 10 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Error: SUPABASE_URL and SUPABASE_ANON_KEY secrets are not set."
+            exit 1
+          fi
+          
+          echo "Pinging Supabase REST API to keep project alive..."
+          
+          # 使用 curl 调用 REST API 查询一个不存在的表即可产生请求活动并唤醒数据库
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${SUPABASE_URL}/rest/v1/keep_alive_dummy_table?limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+            
+          echo "Supabase responded with HTTP status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 400 ] || [ "$HTTP_STATUS" -eq 404 ]; then
+            echo "Ping successful!"
+            exit 0
+          else
+            echo "Ping failed or unexpected status."
+            exit 1
+          fi
