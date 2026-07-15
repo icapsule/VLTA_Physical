@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Radar,
   RadarChart,
@@ -19,6 +20,12 @@ interface FitnessRadarChartProps {
 }
 
 export default function FitnessRadarChart({ score, metrics }: FitnessRadarChartProps) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Convert dimensions to recharts format
   const data = Object.entries(score.dimensions).map(([, dim]) => ({
     subject: dim.label,
@@ -50,12 +57,13 @@ export default function FitnessRadarChart({ score, metrics }: FitnessRadarChartP
       </h2>
       <div className="flex flex-col md:flex-row gap-6 flex-1">
         <div className="flex-1 min-h-[250px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-              <PolarGrid stroke="#374151" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 12 }} />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#4b5563', fontSize: 10 }} />
-              <Radar
+          {mounted ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart id="fitness-radar-chart-svg" cx="50%" cy="50%" outerRadius="70%" data={data}>
+                <PolarGrid stroke="#374151" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#4b5563', fontSize: 10 }} />
+                <Radar
                 name="能力评分"
                 dataKey="A"
                 stroke="#6366f1"
@@ -68,6 +76,11 @@ export default function FitnessRadarChart({ score, metrics }: FitnessRadarChartP
               />
             </RadarChart>
           </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <span className="text-gray-600 text-sm">加载图表中...</span>
+            </div>
+          )}
         </div>
         
         {/* Benchmark Legend */}
