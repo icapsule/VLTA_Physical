@@ -5,6 +5,7 @@ import type { Profile, TestItem } from '@/lib/supabase/types'
 import { ScoringMode } from '@/lib/utils/fitness-score'
 import AthleteScoreDashboard from './athlete-score-dashboard'
 import AthletePBDashboard from './athlete-pb-dashboard'
+import { useT } from '@/lib/locale-context'
 
 interface Props {
   athlete: Profile
@@ -16,6 +17,7 @@ interface Props {
 
 export default function AthleteProfileContainer({ athlete, results, metrics, age, pbs }: Props) {
   const [mode, setMode] = useState<ScoringMode>('regular')
+  const t = useT()
 
   return (
     <div className="space-y-6">
@@ -37,9 +39,9 @@ export default function AthleteProfileContainer({ athlete, results, metrics, age
               {athlete.gender === 'female' && <span className="text-pink-400 text-lg">♀</span>}
             </h1>
             <p className="text-sm text-gray-400">
-              {athlete.birth_date && `${new Date().getFullYear() - new Date(athlete.birth_date).getFullYear()} 岁 · `}
-              {athlete.height_cm && `身高 ${athlete.height_cm}cm · `}
-              {athlete.weight_kg && `体重 ${athlete.weight_kg}kg`}
+              {athlete.birth_date && `${new Date().getFullYear() - new Date(athlete.birth_date).getFullYear()} ${t("岁", "yrs")} · `}
+              {athlete.height_cm && `${t("身高", "Height")} ${athlete.height_cm}cm · `}
+              {athlete.weight_kg && `${t("体重", "Weight")} ${athlete.weight_kg}kg`}
             </p>
           </div>
         </div>
@@ -54,7 +56,7 @@ export default function AthleteProfileContainer({ athlete, results, metrics, age
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            普通青少年标准
+            {t("普通青少年标准", "Regular Standard")}
           </button>
           <button
             onClick={() => setMode('elite')}
@@ -64,7 +66,7 @@ export default function AthleteProfileContainer({ athlete, results, metrics, age
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            精英运动员标准
+            {t("精英运动员标准", "Elite Standard")}
           </button>
         </div>
       </div>
@@ -81,7 +83,7 @@ export default function AthleteProfileContainer({ athlete, results, metrics, age
 
       {/* PB Dashboard */}
       <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-        <h2 className="mb-4 font-semibold text-white">🏆 个人最高纪录 (PB)</h2>
+        <h2 className="mb-4 font-semibold text-white">{t("🏆 个人最高纪录 (PB)", "🏆 Personal Bests")}</h2>
         <AthletePBDashboard 
           athlete={athlete} 
           metrics={metrics} 

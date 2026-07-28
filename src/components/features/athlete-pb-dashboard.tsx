@@ -6,6 +6,7 @@ import { DIMENSION_LABELS, getScoreConfig, ScoringMode, calculateItemScore } fro
 import { submitGroupSession } from '@/lib/actions/group-session-action'
 import { displayMetricValue, parseTimeStringToSeconds } from '@/lib/utils/format'
 import { useRouter } from 'next/navigation'
+import { useT } from '@/lib/locale-context'
 
 interface Props {
   athlete: Profile
@@ -17,6 +18,7 @@ interface Props {
 
 export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regular', age = 10 }: Props) {
   const router = useRouter()
+  const t = useT()
   const [editingMetric, setEditingMetric] = useState<TestItem | null>(null)
   const [newValue, setNewValue] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -43,7 +45,7 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
       if (!isNaN(parsed)) {
         finalValue = parsed.toString()
       } else {
-        setError('无效的时间格式')
+        setError(t('无效的时间格式', 'Invalid time format'))
         setIsSubmitting(false)
         return
       }
@@ -125,7 +127,7 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
                       onClick={() => handleOpenModal(m)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1"
                     >
-                      🔥 刷新
+                      🔥 {t('刷新', 'Update')}
                     </button>
                   </div>
                   
@@ -133,9 +135,9 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
                   {pb !== null && config && m.unit !== 'boolean' && (
                     <div className="flex flex-col gap-1 mt-1">
                       <div className="flex justify-between text-[9px] text-gray-500 font-medium">
-                        <span>0分</span>
-                        <span className="text-indigo-400">当前得分: {pbScore} 分</span>
-                        <span>100分 ({displayMetricValue(config.max, m.unit)})</span>
+                        <span>{t('0分', '0')}</span>
+                        <span className="text-indigo-400">{t('当前得分', 'Score')}: {pbScore} {t('分', 'pts')}</span>
+                        <span>100{t('分', 'pts')} ({displayMetricValue(config.max, m.unit)})</span>
                       </div>
                       <div className="relative h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
                         {/* 60 Points (Pass) Marker */}
@@ -151,7 +153,7 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
                         />
                       </div>
                       <div className="flex justify-between text-[8px] text-gray-600">
-                        <span className="ml-[60%] -translate-x-1/2">及格线 ({displayMetricValue(config.min, m.unit)})</span>
+                        <span className="ml-[60%] -translate-x-1/2">{t('及格线', 'Pass')} ({displayMetricValue(config.min, m.unit)})</span>
                       </div>
                     </div>
                   )}
@@ -166,14 +168,14 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
       {editingMetric && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-2">🔥 刷新 PB (Record New Best)</h3>
+            <h3 className="text-lg font-bold text-white mb-2">🔥 {t('刷新 PB (Record New Best)', 'Update PB (Record New Best)')}</h3>
             <p className="text-sm text-gray-400 mb-6">
-              录入 <span className="text-yellow-400 font-semibold">{athlete.full_name}</span> 在 <span className="text-indigo-400 font-semibold">{editingMetric.name_zh}</span> 的最新成绩。系统会自动将它结算为最新 PB。
+              {t('录入', 'Record')} <span className="text-yellow-400 font-semibold">{athlete.full_name}</span> {t('在', 'for')} <span className="text-indigo-400 font-semibold">{editingMetric.name_zh}</span> {t('的最新成绩。系统会自动将它结算为最新 PB。', '. System will auto-calculate new PB.')}
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 block">成绩数值 ({editingMetric.unit})</label>
+                <label className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 block">{t('成绩数值', 'Value')} ({editingMetric.unit})</label>
                 <input
                   type={editingMetric.unit === 's' ? 'text' : 'number'}
                   step={editingMetric.unit === 's' ? undefined : '0.01'}
@@ -184,9 +186,9 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
                   className="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-white placeholder-gray-600 focus:border-indigo-500 focus:outline-none"
                 />
                 {editingMetric.higher_is_better ? (
-                  <p className="text-[10px] text-green-400 mt-1">此项目数值必须高于当前 PB 才能生效。</p>
+                  <p className="text-[10px] text-green-400 mt-1">{t('此项目数值必须高于当前 PB 才能生效。', 'Value must be higher than current PB.')}</p>
                 ) : (
-                  <p className="text-[10px] text-blue-400 mt-1">此项目数值必须低于当前 PB 才能生效。</p>
+                  <p className="text-[10px] text-blue-400 mt-1">{t('此项目数值必须低于当前 PB 才能生效。', 'Value must be lower than current PB.')}</p>
                 )}
               </div>
 
@@ -198,14 +200,14 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
                   disabled={isSubmitting}
                   className="flex-1 rounded-lg bg-gray-800 py-2.5 text-sm font-semibold text-gray-300 hover:bg-gray-700 transition-colors"
                 >
-                  取消
+                  {t('取消', 'Cancel')}
                 </button>
                 <button
                   onClick={handleSubmitPB}
                   disabled={isSubmitting || !newValue}
                   className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 disabled:opacity-50 transition-all"
                 >
-                  {isSubmitting ? '正在入库...' : '确认刷新'}
+                  {isSubmitting ? t('正在入库...', 'Saving...') : t('确认刷新', 'Confirm Update')}
                 </button>
               </div>
             </div>

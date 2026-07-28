@@ -2,12 +2,14 @@
 
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import type { FitnessScore } from '@/lib/utils/fitness-score'
+import { useT } from '@/lib/locale-context'
 
 interface RadarChartViewProps {
   score: FitnessScore
 }
 
 export default function RadarChartView({ score }: RadarChartViewProps) {
+  const t = useT()
   const data = [
     { subject: score.dimensions.speed.label, A: score.dimensions.speed.score, fullMark: 100 },
     { subject: score.dimensions.power.label, A: score.dimensions.power.score, fullMark: 100 },
@@ -19,7 +21,7 @@ export default function RadarChartView({ score }: RadarChartViewProps) {
   return (
     <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-gray-800 bg-gray-900 p-6">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-400 self-start">
-        多维体能分析 (雷达图)
+        {t("多维体能分析 (雷达图)", "Multi-Dimensional Fitness Analysis (Radar)")}
       </h2>
       <div className="h-48 w-full sm:h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -44,7 +46,7 @@ export default function RadarChartView({ score }: RadarChartViewProps) {
       </div>
       <div className="mt-2 text-center">
         <div className="text-3xl font-bold text-white">{score.total}</div>
-        <div className="text-xs text-gray-500">综合得分</div>
+        <div className="text-xs text-gray-500">{t("综合得分", "Overall Score")}</div>
       </div>
     </div>
   )

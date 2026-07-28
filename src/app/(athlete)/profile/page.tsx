@@ -6,9 +6,12 @@ import AthleteProfileContainer from '@/components/features/athlete-profile-conta
 import AthleteProgressChart from '@/components/features/athlete-progress-chart'
 import AssessmentLogTable from '@/components/features/assessment-log-table'
 import { displayMetricValue } from '@/lib/utils/format'
+import { getLocale } from '@/lib/i18n'
+import { LocaleProvider } from '@/lib/locale-context'
 
 export default async function AthleteSelfPage() {
   const supabase = await createClient()
+  const locale = await getLocale()
 
   const { userId } = await auth()
   const user = userId ? { id: userId } : null
@@ -94,28 +97,32 @@ export default async function AthleteSelfPage() {
     }
   })
 
+  const t = (zh: string, en: string) => locale === 'en' ? en : zh
+
   return (
-    <div className="space-y-6">
-      {/* Shared Dashboard Container */}
-      <AthleteProfileContainer 
-        athlete={athlete as any}
-        results={latestByMetricId} 
-        metrics={testMetrics}
-        age={age} 
-        pbs={pbs}
-      />
+    <LocaleProvider locale={locale}>
+      <div className="space-y-6">
+        {/* Shared Dashboard Container */}
+        <AthleteProfileContainer 
+          athlete={athlete as any}
+          results={latestByMetricId} 
+          metrics={testMetrics}
+          age={age} 
+          pbs={pbs}
+        />
 
-      {/* Progress Chart (Only shows 'test' records) */}
-      <AthleteProgressChart 
-        results={sortedResults.filter(r => (r.test_metrics as any)?.record_type === 'test') as any} 
-        metrics={testMetrics}
-      />
+        {/* Progress Chart (Only shows 'test' records) */}
+        <AthleteProgressChart 
+          results={sortedResults.filter(r => (r.test_metrics as any)?.record_type === 'test') as any} 
+          metrics={testMetrics}
+        />
 
-      {/* Hybrid Training & Test Log */}
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-        <h2 className="mb-4 font-semibold text-white">训练与测试日志</h2>
-        <AssessmentLogTable results={sortedResults} isEditable={false} />
+        {/* Hybrid Training & Test Log */}
+        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="mb-4 font-semibold text-white">{t("训练与测试日志", "Training & Test Log")}</h2>
+          <AssessmentLogTable results={sortedResults} isEditable={false} />
+        </div>
       </div>
-    </div>
+    </LocaleProvider>
   )
 }

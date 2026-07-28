@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { displayMetricValue, parseTimeStringToSeconds } from '@/lib/utils/format'
 import { updateAssessmentLog, deleteAssessmentLog } from '@/lib/actions/assessment-log-action'
+import { useT } from '@/lib/locale-context'
 
 export default function AssessmentLogTable({
   results,
@@ -12,11 +13,11 @@ export default function AssessmentLogTable({
   isEditable?: boolean
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  
   const [editDate, setEditDate] = useState('')
   const [editResult, setEditResult] = useState<string>('')
   const [editPassed, setEditPassed] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState(false)
+  const t = useT()
 
   const startEdit = (r: any) => {
     setEditingId(r.id)
@@ -53,7 +54,7 @@ export default function AssessmentLogTable({
   }
 
   const handleDelete = async (resultId: string) => {
-    if (!confirm('确定要删除这条记录吗？此操作不可恢复。')) return
+    if (!confirm(t('确定要删除这条记录吗？此操作不可恢复。', 'Are you sure you want to delete this record? This cannot be undone.'))) return
 
     setIsLoading(true)
     const { success, error } = await deleteAssessmentLog(resultId)
@@ -66,7 +67,7 @@ export default function AssessmentLogTable({
   }
 
   if (results.length === 0) {
-    return <p className="text-sm text-gray-500">暂无测试记录</p>
+    return <p className="text-sm text-gray-500">{t("暂无测试记录", "No records yet")}</p>
   }
 
   return (
@@ -74,12 +75,12 @@ export default function AssessmentLogTable({
       <table className="w-full text-sm relative">
         <thead className="sticky top-0 z-10 bg-gray-900 text-left text-xs text-gray-500 shadow-sm">
           <tr>
-            <th className="pb-2 pr-4">日期</th>
-            <th className="pb-2 pr-4">项目</th>
-            <th className="pb-2 pr-4">最好成绩</th>
-            <th className="pb-2 pr-4">完成状态</th>
-            <th className="pb-2 pr-4">所有尝试</th>
-            {isEditable && <th className="pb-2">操作</th>}
+            <th className="pb-2 pr-4">{t("日期", "Date")}</th>
+            <th className="pb-2 pr-4">{t("项目", "Event")}</th>
+            <th className="pb-2 pr-4">{t("最好成绩", "Best Result")}</th>
+            <th className="pb-2 pr-4">{t("完成状态", "Status")}</th>
+            <th className="pb-2 pr-4">{t("所有尝试", "All Attempts")}</th>
+            {isEditable && <th className="pb-2">{t("操作", "Actions")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -133,22 +134,21 @@ export default function AssessmentLogTable({
                       disabled={isLoading}
                       className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-500 disabled:opacity-50"
                     >
-                      {isLoading ? '...' : '保存'}
+                      {isLoading ? '...' : t('保存', 'Save')}
                     </button>
                     <button 
                       onClick={() => setEditingId(null)}
                       disabled={isLoading}
                       className="rounded bg-gray-700 px-3 py-1 text-xs text-white hover:bg-gray-600 disabled:opacity-50"
                     >
-                      取消
+                      {t('取消', 'Cancel')}
                     </button>
                     <button 
                       onClick={() => handleDelete(r.id)}
                       disabled={isLoading}
                       className="rounded border border-red-500/50 text-red-400 px-3 py-1 text-xs hover:bg-red-500/10 disabled:opacity-50 transition-colors"
-                      title="删除记录"
-                    >
-                      删除
+                      title={t('删除记录', 'Delete record')}>
+                      {t('删除', 'Delete')}
                     </button>
                   </td>
                 </tr>
@@ -162,9 +162,9 @@ export default function AssessmentLogTable({
                   <div className="flex items-center gap-2">
                     <span className="text-gray-300">{r.test_metrics?.name_zh}</span>
                     {recordType === 'test' ? (
-                      <span className="rounded bg-indigo-900/50 px-2 py-0.5 text-[10px] font-medium text-indigo-300 border border-indigo-700/50">🏅 评估测试</span>
+                      <span className="rounded bg-indigo-900/50 px-2 py-0.5 text-[10px] font-medium text-indigo-300 border border-indigo-700/50">{t('🏅 评估测试', '🏅 Assessment')}</span>
                     ) : (
-                      <span className="rounded bg-emerald-900/50 px-2 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-700/50">🏃 训练任务</span>
+                      <span className="rounded bg-emerald-900/50 px-2 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-700/50">{t('🏃 训练任务', '🏃 Training')}</span>
                     )}
                   </div>
                 </td>
@@ -173,7 +173,7 @@ export default function AssessmentLogTable({
                 </td>
                 <td className="py-3 pr-4 font-mono text-sm">
                   {recordType === 'training' 
-                    ? (r.is_passed ? <span className="text-emerald-400">✅ 已完成</span> : <span className="text-red-400">❌ 未完成</span>)
+                    ? (r.is_passed ? <span className="text-emerald-400">{t('✅ 已完成', '✅ Done')}</span> : <span className="text-red-400">{t('❌ 未完成', '❌ Not Done')}</span>)
                     : <span className="text-gray-600">-</span>
                   }
                 </td>
@@ -186,7 +186,7 @@ export default function AssessmentLogTable({
                       onClick={() => startEdit(r)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-indigo-400 text-xs flex items-center gap-1"
                     >
-                      <span>✏️</span> 编辑
+                      <span>✏️</span> {t('编辑', 'Edit')}
                     </button>
                   </td>
                 )}

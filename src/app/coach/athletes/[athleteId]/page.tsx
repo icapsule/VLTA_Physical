@@ -7,10 +7,13 @@ import AthleteProgressChart from '@/components/features/athlete-progress-chart'
 import AssessmentLogTable from '@/components/features/assessment-log-table'
 import { displayMetricValue } from '@/lib/utils/format'
 import CopyShareLinkButton from '@/components/features/copy-share-link-button'
+import { getLocale } from '@/lib/i18n'
+import { LocaleProvider } from '@/lib/locale-context'
 
 export default async function AthleteDetailPage({ params }: { params: Promise<{ athleteId: string }> }) {
   const { athleteId } = await params
   const supabase = await createClient()
+  const locale = await getLocale()
 
   const { userId } = await auth()
   const user = userId ? { id: userId } : null
@@ -106,35 +109,39 @@ export default async function AthleteDetailPage({ params }: { params: Promise<{ 
     }
   })
 
+  const t = (zh: string, en: string) => locale === 'en' ? en : zh
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <a href="/coach/athletes" className="text-sm text-indigo-400 hover:text-indigo-300">
-          ← 返回学员列表
-        </a>
-        <CopyShareLinkButton token={athlete.share_token} />
+    <LocaleProvider locale={locale}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <a href="/coach/athletes" className="text-sm text-indigo-400 hover:text-indigo-300">
+            ← {t("返回学员列表", "Back to Athletes")}
+          </a>
+          <CopyShareLinkButton token={athlete.share_token} />
+        </div>
+
+        {/* Shared Dashboard Container */}
+        <AthleteProfileContainer 
+          athlete={athlete as any}
+          results={latestByMetricId} 
+          metrics={testMetrics}
+          age={age} 
+          pbs={pbs}
+        />
+
+        {/* Progress Chart (Only shows 'test' records) */}
+        <AthleteProgressChart 
+          results={sortedResults.filter(r => (r.test_metrics as any)?.record_type === 'test') as any} 
+          metrics={testMetrics}
+        />
+
+        {/* Hybrid Training & Test Log */}
+        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="mb-4 font-semibold text-white">{t("训练与测试日志", "Training & Test Log")}</h2>
+          <AssessmentLogTable results={sortedResults} isEditable={true} />
+        </div>
       </div>
-
-      {/* Shared Dashboard Container */}
-      <AthleteProfileContainer 
-        athlete={athlete as any}
-        results={latestByMetricId} 
-        metrics={testMetrics}
-        age={age} 
-        pbs={pbs}
-      />
-
-      {/* Progress Chart (Only shows 'test' records) */}
-      <AthleteProgressChart 
-        results={sortedResults.filter(r => (r.test_metrics as any)?.record_type === 'test') as any} 
-        metrics={testMetrics}
-      />
-
-      {/* Hybrid Training & Test Log */}
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-        <h2 className="mb-4 font-semibold text-white">训练与测试日志</h2>
-        <AssessmentLogTable results={sortedResults} isEditable={true} />
-      </div>
-    </div>
+    </LocaleProvider>
   )
 }
