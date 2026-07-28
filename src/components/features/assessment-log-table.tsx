@@ -3,25 +3,7 @@
 import { useState } from 'react'
 import { displayMetricValue, parseTimeStringToSeconds } from '@/lib/utils/format'
 import { updateAssessmentLog, deleteAssessmentLog } from '@/lib/actions/assessment-log-action'
-import { useT, useLocale } from '@/lib/locale-context'
-
-const METRIC_NAME_EN: Record<string, string> = {
-  '立定跳远': 'Standing Long Jump',
-  '10米冲刺': '10m Sprint',
-  '20米': '20m Sprint',
-  '100米': '100m',
-  '200米': '200m',
-  '400米': '400m',
-  '800米': '800m',
-  '1000米': '1000m',
-  '1500米': '1500m',
-  '3000米': '3000m',
-  '10x5折返跑': '10x5 Shuttle Run',
-  '坐位体前屈': 'Sit-and-Reach',
-  '实心球': 'Medicine Ball Throw',
-  '引体向上': 'Pull-ups',
-  'Yo-Yo测试': 'Yo-Yo Test',
-}
+import { useT, useLocale, useMetricName } from '@/lib/locale-context'
 
 export default function AssessmentLogTable({
   results,
@@ -37,7 +19,7 @@ export default function AssessmentLogTable({
   const [isLoading, setIsLoading] = useState(false)
   const t = useT()
   const locale = useLocale()
-  const getMetricName = (nameZh: string) => locale === 'en' ? (METRIC_NAME_EN[nameZh] ?? nameZh) : nameZh
+  const getMetricName = useMetricName()
 
   const startEdit = (r: any) => {
     setEditingId(r.id)

@@ -13,37 +13,15 @@ import {
 import type { FitnessScore } from '@/lib/utils/fitness-score'
 import { DIMENSION_LABELS, DIMENSION_LABELS_EN } from '@/lib/utils/fitness-score'
 import type { TestItem } from '@/lib/supabase/types'
-import { useT, useLocale } from '@/lib/locale-context'
+import { useT, useLocale, useMetricName } from '@/lib/locale-context'
 
 interface FitnessRadarChartProps {
   score: FitnessScore
   metrics?: TestItem[]
 }
 
-/** Returns a short English display name for a metric, derived from name_zh */
-function getMetricDisplayName(nameZh: string, locale: string): string {
-  if (locale !== 'en') return nameZh
 
-  // Mapping: name_zh → English name
-  const map: Record<string, string> = {
-    '立定跳远': 'Standing Long Jump',
-    '10米冲刺': '10m Sprint',
-    '20米': '20m Sprint',
-    '100米': '100m',
-    '200米': '200m',
-    '400米': '400m',
-    '800米': '800m',
-    '1000米': '1000m',
-    '1500米': '1500m',
-    '3000米': '3000m',
-    '10x5折返跑': '10x5 Shuttle Run',
-    '坐位体前屈': 'Sit-and-Reach',
-    '实心球': 'Medicine Ball Throw',
-    '引体向上': 'Pull-ups',
-    'Yo-Yo测试': 'Yo-Yo Test',
-  }
-  return map[nameZh] || nameZh
-}
+
 
 export default function FitnessRadarChart({ score, metrics }: FitnessRadarChartProps) {
   const [mounted, setMounted] = useState(false)
@@ -51,6 +29,7 @@ export default function FitnessRadarChart({ score, metrics }: FitnessRadarChartP
   const locale = useLocale()
 
   const dimLabels = locale === 'en' ? DIMENSION_LABELS_EN : DIMENSION_LABELS
+  const getMetricName = useMetricName()
 
   useEffect(() => {
     setMounted(true)
@@ -68,7 +47,7 @@ export default function FitnessRadarChart({ score, metrics }: FitnessRadarChartP
   // Group benchmark metrics by dimension
   const benchmarksByDimension = benchmarkMetrics.reduce((acc, m) => {
     if (!acc[m.dimension]) acc[m.dimension] = []
-    acc[m.dimension].push(getMetricDisplayName(m.name_zh, locale))
+    acc[m.dimension].push(getMetricName(m.name_zh))
     return acc
   }, {} as Record<string, string[]>)
 

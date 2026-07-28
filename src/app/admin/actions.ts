@@ -138,3 +138,55 @@ export async function toggleMetricInRadar(metricId: string, inRadar: boolean) {
     return { success: false, error: error.message || 'Internal error' }
   }
 }
+
+/**
+ * Admin action: rename a metric's name_zh in the DB.
+ */
+export async function renameMetric(metricId: string, newNameZh: string) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { userId } = await auth()
+  if (!userId) return { success: false, error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single()
+  if (!profile || profile.role !== 'admin') return { success: false, error: 'Permission denied' }
+
+  const { error } = await supabase.from('test_metrics').update({ name_zh: newNameZh }).eq('id', metricId)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/metrics')
+  revalidatePath('/coach/athletes')
+  revalidatePath('/profile')
+  return { success: true }
+}
+
+/**
+ * Admin action: insert a new metric into the DB.
+ */
+export async function insertMetric(metric: {
+  name_zh: string
+  dimension: string
+  unit: string
+  higher_is_better: boolean
+  record_type: 'test' | 'training'
+  in_radar: boolean
+}) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { userId } = await auth()
+  if (!userId) return { success: false, error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single()
+  if (!profile || profile.role !== 'admin') return { success: false, error: 'Permission denied' }
+
+  const { error } = await supabase.from('test_metrics').insert([metric])
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/metrics')
+  revalidatePath('/coach/athletes')
+  revalidatePath('/profile')
+  return { success: true }
+}
+
