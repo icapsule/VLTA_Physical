@@ -165,6 +165,7 @@ export async function renameMetric(metricId: string, newNameZh: string) {
  * Admin action: insert a new metric into the DB.
  */
 export async function insertMetric(metric: {
+  id?: string
   name_zh: string
   dimension: string
   unit: string

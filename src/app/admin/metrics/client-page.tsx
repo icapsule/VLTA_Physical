@@ -32,6 +32,7 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
     'Yo-Yo 间歇恢复跑 (Beep Test)': 'Yo-Yo Test (Beep Test)',
     'Yo-Yo测试': 'Yo-Yo Test (Beep Test)',
     '10x5折返跑': '10x5m Shuttle Run',
+    '10x5 折返跑': '10x5m Shuttle Run',
     '俯卧撑': 'Push-Up',
   }
 
@@ -54,9 +55,10 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
     }
 
     // 2. Insert Dead Hang if not already present
-    const hasDeadHang = metrics.some(m => m.name_zh === '直臂悬垂' || m.name_zh === 'Dead Hang')
+    const hasDeadHang = metrics.some(m => m.name_zh === '直臂悬垂' || m.name_zh === 'Dead Hang' || m.id === 'dead_hang')
     if (!hasDeadHang) {
       const result = await insertMetric({
+        id: 'dead_hang',
         name_zh: '直臂悬垂',
         dimension: 'strength',
         unit: 's',
@@ -65,16 +67,17 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
         in_radar: false,
       })
       if (result.success) {
-        log.push('✅ Inserted 直臂悬垒 (Dead Hang)')
+        log.push('✅ Inserted 直臂悬垂 (Dead Hang)')
       } else {
         log.push(`❌ Failed to insert Dead Hang: ${result.error}`)
       }
     } else {
-      log.push('ℹ️ 直臂悬垒 already exists, skipped')
+      log.push('ℹ️ 直臂悬垂 already exists')
     }
 
     setMigrationLog(log)
     setIsPending(false)
+    alert(log.join('\n'))
     window.location.reload()
   }
 

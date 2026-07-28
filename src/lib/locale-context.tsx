@@ -54,12 +54,16 @@ export const METRIC_NAME_EN: Record<string, string> = {
   '实心球': 'Medicine Ball Throw (2kg)',
   // Agility
   '10x5m Shuttle Run': '10x5m Shuttle Run',
+  '10x5 折返跑': '10x5m Shuttle Run',
+  '10x5折返跑': '10x5m Shuttle Run',
   // Flexibility
   '坐位体前屈': 'Sit-and-Reach',
   // Strength
   '引体向上': 'Pull-ups',
   'Push-Up': 'Push-Up',
+  '俯卧撑': 'Push-Up',
   '直臂悬垂': 'Dead Hang',
+  'Dead Hang': 'Dead Hang',
 }
 
 /**
