@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { SignOutButton } from '@clerk/nextjs'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/supabase/types'
+import { cookies } from 'next/headers'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
 /**
  * Coach layout — validates that the current user has role='coach' or 'admin'.
@@ -13,6 +15,8 @@ export default async function CoachLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
+  const cookieStore = await cookies()
+  const initialLang = cookieStore.get('NEXT_LOCALE')?.value || 'zh'
 
   const { userId } = await auth()
   const user = userId ? { id: userId } : null
