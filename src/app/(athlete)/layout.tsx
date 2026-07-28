@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/supabase/types'
+import { cookies } from 'next/headers'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import { getTranslator } from '@/lib/i18n'
 
 /**
  * Athlete layout — validates that the current user has role='athlete'.
@@ -15,6 +18,9 @@ export default async function AthleteLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
+  const cookieStore = await cookies()
+  const initialLang = cookieStore.get('NEXT_LOCALE')?.value || 'zh'
+  const t = await getTranslator()
 
   const { userId } = await auth()
   const user = userId ? { id: userId } : null
@@ -43,11 +49,12 @@ export default async function AthleteLayout({
             <span className="text-white">体能表现追踪看板 (Performance Tracking Dashboard)</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-400">
+            <LanguageSwitcher initialLang={initialLang} />
             <Link href="/profile/edit" className="hover:text-white transition-colors">
-              ✍️ 编辑资料
+              {t("✍️ 编辑资料", "✍️ Edit Profile")}
             </Link>
             <SignOutButton>
-              <button className="ml-4 rounded bg-gray-700 px-3 py-1 text-sm hover:bg-gray-600">退出登录</button>
+              <button className="ml-4 rounded bg-gray-700 px-3 py-1 text-sm hover:bg-gray-600">{t("退出登录", "Sign Out")}</button>
             </SignOutButton>
           </div>
         </div>

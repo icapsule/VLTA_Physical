@@ -17,12 +17,12 @@ export default function LanguageSwitcher({ initialLang = 'zh' }: { initialLang?:
   return (
     <button
       onClick={toggleLanguage}
-      className="fixed bottom-6 right-6 z-[9999] flex items-center gap-1.5 rounded-full bg-gray-800 px-3 py-2 text-sm font-semibold shadow-2xl transition-all hover:bg-gray-700 hover:scale-105 border border-gray-600"
+      className="flex items-center gap-1 rounded-md bg-gray-800/40 hover:bg-gray-800/80 px-2 py-0.5 text-xs font-semibold border border-gray-800 transition-colors mr-2 cursor-pointer"
       aria-label="Toggle Language"
     >
-      <span className={`transition-colors ${lang === 'zh' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>中</span>
-      <span className="text-gray-600">|</span>
-      <span className={`transition-colors ${lang === 'en' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>EN</span>
+      <span className={`transition-colors ${lang === 'zh' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}>中</span>
+      <span className="text-gray-700">|</span>
+      <span className={`transition-colors ${lang === 'en' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}>EN</span>
     </button>
   )
 }

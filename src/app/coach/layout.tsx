@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/supabase/types'
 import { cookies } from 'next/headers'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import { getTranslator } from '@/lib/i18n'
 
 /**
  * Coach layout — validates that the current user has role='coach' or 'admin'.
@@ -17,6 +18,7 @@ export default async function CoachLayout({
   const supabase = await createClient()
   const cookieStore = await cookies()
   const initialLang = cookieStore.get('NEXT_LOCALE')?.value || 'zh'
+  const t = await getTranslator()
 
   const { userId } = await auth()
   const user = userId ? { id: userId } : null
@@ -43,8 +45,9 @@ export default async function CoachLayout({
             🎾 VTA Athlete Club | Coach {profile?.full_name || 'Admin'}
           </a>
           <div className="flex items-center gap-4 text-sm text-gray-400">
-            <a href="/coach/athletes" className="hover:text-white">学员管理</a>
-            <a href="/coach/sessions/new" className="text-emerald-400 hover:text-emerald-300">批量集训录入</a>
+            <LanguageSwitcher initialLang={initialLang} />
+            <a href="/coach/athletes" className="hover:text-white">{t("学员管理", "Students")}</a>
+            <a href="/coach/sessions/new" className="text-emerald-400 hover:text-emerald-300">{t("批量集训录入", "Batch Sessions")}</a>
             {profile?.role === 'admin' && (
               <a href="/admin/users" className="text-yellow-400 hover:text-yellow-300">
                 Admin ⚙️
@@ -52,7 +55,7 @@ export default async function CoachLayout({
             )}
             {/* Logout button */}
             <SignOutButton>
-              <button className="ml-4 rounded bg-gray-700 px-3 py-1 text-sm hover:bg-gray-600">退出登录</button>
+              <button className="ml-4 rounded bg-gray-700 px-3 py-1 text-sm hover:bg-gray-600">{t("退出登录", "Sign Out")}</button>
             </SignOutButton>
           </div>
         </div>

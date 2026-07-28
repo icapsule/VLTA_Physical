@@ -2,6 +2,9 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/supabase/types'
+import { cookies } from 'next/headers'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import { getTranslator } from '@/lib/i18n'
 
 /**
  * Admin layout — validates that the current user has role='admin'.
@@ -12,6 +15,9 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
+  const cookieStore = await cookies()
+  const initialLang = cookieStore.get('NEXT_LOCALE')?.value || 'zh'
+  const t = await getTranslator()
 
   const { userId } = await auth()
   const user = userId ? { id: userId } : null
@@ -36,10 +42,11 @@ export default async function AdminLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <span className="text-lg font-bold text-yellow-400">🎾 VTA Athlete Club | Admin {profile?.full_name || ''}</span>
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/admin/users" className="hover:text-white transition-colors">User Management</a>
-            <a href="/admin/metrics" className="hover:text-white transition-colors">Test & Training Metrics</a>
+            <LanguageSwitcher initialLang={initialLang} />
+            <a href="/admin/users" className="hover:text-white transition-colors">{t("用户管理", "User Management")}</a>
+            <a href="/admin/metrics" className="hover:text-white transition-colors">{t("指标管理", "Test & Training Metrics")}</a>
             <a href="/coach/athletes" className="text-indigo-400 hover:text-indigo-300 ml-4 border-l border-gray-800 pl-4">
-              &larr; 回到教练端
+              &larr; {t("回到教练端", "Back to Coach")}
             </a>
           </div>
         </div>
