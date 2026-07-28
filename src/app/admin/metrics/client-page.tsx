@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import type { TestItem } from '@/lib/supabase/types'
 import { toggleMetricInRadar } from '@/app/admin/actions'
 import { DIMENSION_LABELS } from '@/lib/utils/fitness-score'
@@ -67,10 +68,20 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
       </div>
 
       {/* Scoring Standards Explanation Module */}
-      <div className="rounded-2xl border border-indigo-900/50 bg-indigo-900/10 p-5">
-        <h2 className="mb-3 text-sm font-semibold text-indigo-300 flex items-center gap-2">
-          <span>📚 科学评分引擎底层逻辑 (Scientific Scoring Logic)</span>
-        </h2>
+      <div className="rounded-2xl border border-indigo-900/50 bg-indigo-900/10 p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-indigo-300 flex items-center gap-2">
+            <span>📚 科学评分引擎底层逻辑 (Scientific Scoring Logic)</span>
+          </h2>
+          
+          <Link
+            href="/admin/metrics/standards"
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 transition-all shadow-lg shadow-indigo-600/20 w-max"
+          >
+            📖 查看全量指标打分明细与数据源 (View All Standards & Sources) →
+          </Link>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 text-xs">
           <div className="rounded-xl bg-gray-900/60 border border-gray-800 p-4">
             <h3 className="font-semibold text-gray-300 mb-2">🔰 常规青少年标准 (Regular Mode)</h3>
@@ -90,13 +101,13 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
             <div className="absolute top-0 right-0 p-3 opacity-10 text-4xl">👑</div>
             <h3 className="font-semibold text-indigo-400 mb-2 relative z-10">👑 精英运动员标准 (Elite Mode)</h3>
             <p className="text-indigo-200/70 mb-2 relative z-10">
-              用于筛选和评估具有竞技体育潜力的好苗子。以 18 岁达到国家二级/三级运动员门槛为天花板，结合 LTAD 规律反推至 8 岁。
+              专为网球等竞技运动选拔好苗子设计。结合 CTA (中国网球协会) 青少年体能考核规范（如 3分钟双摇跳 U14-U16 优秀线 260+ 次，职业门槛 280-330 次）、ITF 常模及 NSCA / LTAD 规律。
             </p>
             <div className="mt-3 border-t border-indigo-900/40 pt-3 relative z-10">
               <span className="text-indigo-400/60 block mb-1">主要数据参考源：</span>
               <ul className="list-disc list-inside text-indigo-200/80 space-y-1">
-                <li>《中国田径运动员技术等级标准 (2025新规)》</li>
-                <li>ITF / USTA 青少年网球体能测试常模</li>
+                <li>CTA (中国网球协会) 青少年体能测试规范 (双摇跳/折返跑)</li>
+                <li>《中国田径运动员技术等级标准 (2025新规)》及 ITF / USTA 常模</li>
               </ul>
             </div>
           </div>

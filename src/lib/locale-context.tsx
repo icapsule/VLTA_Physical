@@ -64,6 +64,11 @@ export const METRIC_NAME_EN: Record<string, string> = {
   '俯卧撑': 'Push-Up',
   '直臂悬垂': 'Dead Hang',
   'Dead Hang': 'Dead Hang',
+  '平板支撑': 'Plank Hold',
+  // Rope Jump
+  '3分钟双摇跳': '3-Min Double Unders',
+  '1分钟双摇跳': '1-Min Double Unders',
+  '1分钟单摇跳': '1-Min Single Unders',
 }
 
 /**
