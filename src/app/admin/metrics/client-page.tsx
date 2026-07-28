@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { TestItem } from '@/lib/supabase/types'
-import { toggleMetricInRadar, renameMetric, insertMetric } from '@/app/admin/actions'
+import { toggleMetricInRadar } from '@/app/admin/actions'
 import { DIMENSION_LABELS } from '@/lib/utils/fitness-score'
 
 export default function AdminMetricsClient({ initialMetrics }: { initialMetrics: TestItem[] }) {
@@ -10,7 +10,7 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
   const [filterDimension, setFilterDimension] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
   const [isPending, setIsPending] = useState(false)
-  const [migrationLog, setMigrationLog] = useState<string[]>([])
+
 
   const handleToggleRadar = async (metricId: string, currentStatus: boolean) => {
     setIsPending(true)
@@ -25,60 +25,6 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
       setMetrics(prev => prev.map(m => m.id === metricId ? { ...m, in_radar: currentStatus } : m))
     }
     setIsPending(false)
-  }
-
-  // One-time DB migration: rename metrics + add Dead Hang
-  const RENAMES: Record<string, string> = {
-    'Yo-Yo 间歇恢复跑 (Beep Test)': 'Yo-Yo Test (Beep Test)',
-    'Yo-Yo测试': 'Yo-Yo Test (Beep Test)',
-    '10x5折返跑': '10x5m Shuttle Run',
-    '10x5 折返跑': '10x5m Shuttle Run',
-    '俯卧撑': 'Push-Up',
-  }
-
-  const handleApplyMigrations = async () => {
-    setIsPending(true)
-    const log: string[] = []
-
-    // 1. Apply renames
-    for (const m of metrics) {
-      const newName = RENAMES[m.name_zh]
-      if (newName) {
-        const result = await renameMetric(m.id, newName)
-        if (result.success) {
-          log.push(`✅ Renamed “${m.name_zh}” → “${newName}”`)
-          setMetrics(prev => prev.map(p => p.id === m.id ? { ...p, name_zh: newName } : p))
-        } else {
-          log.push(`❌ Failed to rename “${m.name_zh}”: ${result.error}`)
-        }
-      }
-    }
-
-    // 2. Insert Dead Hang if not already present
-    const hasDeadHang = metrics.some(m => m.name_zh === '直臂悬垂' || m.name_zh === 'Dead Hang' || m.id === 'dead_hang')
-    if (!hasDeadHang) {
-      const result = await insertMetric({
-        id: 'dead_hang',
-        name_zh: '直臂悬垂',
-        dimension: 'strength',
-        unit: 's',
-        higher_is_better: true,
-        record_type: 'test',
-        in_radar: false,
-      })
-      if (result.success) {
-        log.push('✅ Inserted 直臂悬垂 (Dead Hang)')
-      } else {
-        log.push(`❌ Failed to insert Dead Hang: ${result.error}`)
-      }
-    } else {
-      log.push('ℹ️ 直臂悬垂 already exists')
-    }
-
-    setMigrationLog(log)
-    setIsPending(false)
-    alert(log.join('\n'))
-    window.location.reload()
   }
 
   const filteredMetrics = metrics.filter((m) => {
@@ -117,14 +63,6 @@ export default function AdminMetricsClient({ initialMetrics }: { initialMetrics:
           <div className="rounded bg-yellow-900/30 border border-yellow-700/50 px-3 py-1.5 text-xs text-yellow-500">
             ⚠️ 核心数据资产，当前为只读模式
           </div>
-
-          <button
-            onClick={handleApplyMigrations}
-            disabled={isPending}
-            className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-4 py-1.5 text-xs font-semibold text-white transition-colors"
-          >
-            🔧 Apply Name Migrations
-          </button>
         </div>
       </div>
 
