@@ -103,6 +103,15 @@ export const DIMENSION_LABELS: Record<keyof FitnessScore['dimensions'], string> 
   agility: '🌪️ 敏捷性',
 }
 
+export const DIMENSION_LABELS_EN: Record<keyof FitnessScore['dimensions'], string> = {
+  speed: '⚡️ Speed',
+  power: '💥 Power',
+  endurance: '🫁 Endurance',
+  flexibility: '🐍 Flexibility',
+  strength: '🦾 Strength',
+  agility: '🌪️ Agility',
+}
+
 export const DIMENSION_WEIGHTS: Record<keyof FitnessScore['dimensions'], number> = {
   speed: 0.20,
   power: 0.20,

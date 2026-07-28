@@ -2,11 +2,30 @@
 
 import { useState } from 'react'
 import type { Profile, TestItem } from '@/lib/supabase/types'
-import { DIMENSION_LABELS, getScoreConfig, ScoringMode, calculateItemScore } from '@/lib/utils/fitness-score'
+import { DIMENSION_LABELS, DIMENSION_LABELS_EN, getScoreConfig, ScoringMode, calculateItemScore } from '@/lib/utils/fitness-score'
 import { submitGroupSession } from '@/lib/actions/group-session-action'
 import { displayMetricValue, parseTimeStringToSeconds } from '@/lib/utils/format'
 import { useRouter } from 'next/navigation'
-import { useT } from '@/lib/locale-context'
+import { useT, useLocale } from '@/lib/locale-context'
+
+// Metric name EN mapping (name_zh → EN)
+const METRIC_NAME_EN: Record<string, string> = {
+  '立定跳远': 'Standing Long Jump',
+  '10米冲刺': '10m Sprint',
+  '20米': '20m Sprint',
+  '100米': '100m',
+  '200米': '200m',
+  '400米': '400m',
+  '800米': '800m',
+  '1000米': '1000m',
+  '1500米': '1500m',
+  '3000米': '3000m',
+  '10x5折返跑': '10x5 Shuttle Run',
+  '坐位体前屈': 'Sit-and-Reach',
+  '实心球': 'Medicine Ball Throw',
+  '引体向上': 'Pull-ups',
+  'Yo-Yo测试': 'Yo-Yo Test',
+}
 
 interface Props {
   athlete: Profile
@@ -19,6 +38,9 @@ interface Props {
 export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regular', age = 10 }: Props) {
   const router = useRouter()
   const t = useT()
+  const locale = useLocale()
+  const dimLabels = locale === 'en' ? DIMENSION_LABELS_EN : DIMENSION_LABELS
+  const getMetricName = (m: TestItem) => locale === 'en' ? (METRIC_NAME_EN[m.name_zh] ?? m.name_zh) : m.name_zh
   const [editingMetric, setEditingMetric] = useState<TestItem | null>(null)
   const [newValue, setNewValue] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -79,7 +101,7 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {metrics.map((m) => {
           const pb = pbs[m.id]
-          const label = DIMENSION_LABELS[m.dimension as keyof typeof DIMENSION_LABELS] || m.dimension
+          const label = dimLabels[m.dimension as keyof typeof dimLabels] || m.dimension
           const config = scoreConfigs.find(c => c.metricId === m.id)
           
           let pbScore = 0
@@ -98,7 +120,7 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-xs font-medium text-gray-500">{label}</span>
-                    <h3 className="text-sm font-semibold text-white mt-1">{m.name_zh}</h3>
+                    <h3 className="text-sm font-semibold text-white mt-1">{getMetricName(m)}</h3>
                   </div>
                   
                   {/* Compact PB Display in the top right corner */}
@@ -170,7 +192,7 @@ export default function AthletePBDashboard({ athlete, metrics, pbs, mode = 'regu
           <div className="w-full max-w-sm rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-2">🔥 {t('刷新 PB (Record New Best)', 'Update PB (Record New Best)')}</h3>
             <p className="text-sm text-gray-400 mb-6">
-              {t('录入', 'Record')} <span className="text-yellow-400 font-semibold">{athlete.full_name}</span> {t('在', 'for')} <span className="text-indigo-400 font-semibold">{editingMetric.name_zh}</span> {t('的最新成绩。系统会自动将它结算为最新 PB。', '. System will auto-calculate new PB.')}
+              {t('录入', 'Record')} <span className="text-yellow-400 font-semibold">{athlete.full_name}</span> {t('在', 'for')} <span className="text-indigo-400 font-semibold">{getMetricName(editingMetric)}</span> {t('的最新成绩。系统会自动将它结算为最新 PB。', '. System will auto-calculate new PB.')}
             </p>
 
             <div className="space-y-4">

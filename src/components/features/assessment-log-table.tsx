@@ -3,7 +3,25 @@
 import { useState } from 'react'
 import { displayMetricValue, parseTimeStringToSeconds } from '@/lib/utils/format'
 import { updateAssessmentLog, deleteAssessmentLog } from '@/lib/actions/assessment-log-action'
-import { useT } from '@/lib/locale-context'
+import { useT, useLocale } from '@/lib/locale-context'
+
+const METRIC_NAME_EN: Record<string, string> = {
+  '立定跳远': 'Standing Long Jump',
+  '10米冲刺': '10m Sprint',
+  '20米': '20m Sprint',
+  '100米': '100m',
+  '200米': '200m',
+  '400米': '400m',
+  '800米': '800m',
+  '1000米': '1000m',
+  '1500米': '1500m',
+  '3000米': '3000m',
+  '10x5折返跑': '10x5 Shuttle Run',
+  '坐位体前屈': 'Sit-and-Reach',
+  '实心球': 'Medicine Ball Throw',
+  '引体向上': 'Pull-ups',
+  'Yo-Yo测试': 'Yo-Yo Test',
+}
 
 export default function AssessmentLogTable({
   results,
@@ -18,6 +36,8 @@ export default function AssessmentLogTable({
   const [editPassed, setEditPassed] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState(false)
   const t = useT()
+  const locale = useLocale()
+  const getMetricName = (nameZh: string) => locale === 'en' ? (METRIC_NAME_EN[nameZh] ?? nameZh) : nameZh
 
   const startEdit = (r: any) => {
     setEditingId(r.id)
@@ -100,7 +120,7 @@ export default function AssessmentLogTable({
                     />
                   </td>
                   <td className="py-3 pr-4 text-gray-300">
-                    {r.test_metrics?.name_zh}
+                    {getMetricName(r.test_metrics?.name_zh)}
                   </td>
                   <td className="py-3 pr-4">
                     {recordType === 'test' ? (
@@ -160,7 +180,7 @@ export default function AssessmentLogTable({
                 <td className="py-3 pr-4 font-mono text-gray-400">{r.assessments?.test_date}</td>
                 <td className="py-3 pr-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-300">{r.test_metrics?.name_zh}</span>
+                    <span className="text-gray-300">{getMetricName(r.test_metrics?.name_zh)}</span>
                     {recordType === 'test' ? (
                       <span className="rounded bg-indigo-900/50 px-2 py-0.5 text-[10px] font-medium text-indigo-300 border border-indigo-700/50">{t('🏅 评估测试', '🏅 Assessment')}</span>
                     ) : (

@@ -2,6 +2,8 @@
 
 import { useCallback } from 'react'
 import type { FitnessScore } from '@/lib/utils/fitness-score'
+import { DIMENSION_LABELS_EN } from '@/lib/utils/fitness-score'
+import { useT, useLocale } from '@/lib/locale-context'
 
 interface FitnessScoreCardProps {
   score: FitnessScore
@@ -20,6 +22,8 @@ const DIMENSION_COLOR: Record<string, string> = {
  */
 export default function FitnessScoreCard({ score }: FitnessScoreCardProps) {
   const { total, dimensions } = score
+  const t = useT()
+  const locale = useLocale()
 
   // SVG circle arc calculation
   const radius = 52
@@ -36,7 +40,7 @@ export default function FitnessScoreCard({ score }: FitnessScoreCardProps) {
   return (
     <div className="h-full flex flex-col rounded-2xl border border-gray-800 bg-gray-900 p-6">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
-        综合体能评分
+        {t('综合体能评分', 'Overall Fitness Score')}
       </h2>
 
       <div className="flex-1 flex flex-col justify-center">
@@ -83,7 +87,9 @@ export default function FitnessScoreCard({ score }: FitnessScoreCardProps) {
         {Object.entries(dimensions).map(([key, dim]) => (
           <div key={key}>
             <div className="mb-1 flex justify-between text-xs">
-              <span className="text-gray-400">{dim.label}</span>
+              <span className="text-gray-400">
+                {locale === 'en' ? (DIMENSION_LABELS_EN[key as keyof typeof DIMENSION_LABELS_EN] ?? dim.label) : dim.label}
+              </span>
               <span className={`font-mono font-semibold ${getScoreColor(dim.score)}`}>
                 {dim.score}
               </span>
@@ -100,7 +106,7 @@ export default function FitnessScoreCard({ score }: FitnessScoreCardProps) {
 
       {total === 0 && (
         <p className="mt-4 text-center text-xs text-gray-500">
-          尚无测试数据，评分将在录入成绩后显示
+                    {t('尚无测试数据，评分将在录入成绩后显示', 'No test data yet. Scores will appear once results are recorded.')}
         </p>
       )}
       </div>
