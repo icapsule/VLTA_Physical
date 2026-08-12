@@ -40,6 +40,11 @@ const METRIC_SOURCES: Record<string, { regularSource: string; eliteSource: strin
     eliteSource: '《中国田径运动员技术等级标准》及 USTA 下肢爆发力评级',
     description: '测试下肢伸肌群瞬间爆发力与身体协调性。'
   },
+  'five_jump_test': {
+    regularSource: 'NSCA (美国国家体能协会) & Chamari et al. (5JT 五步跳常模测试)',
+    eliteSource: 'ITF (国际网球联合会) / 田径跳跃与网球下肢多级跳爆发力常模',
+    description: 'Five-Jump Test (5JT) 是评估运动员下肢水平爆发力、下肢弹性功率与拉伸-短缩循环 (SSC) 效率的核心测试。运动员双脚并拢起跳，连续进行 5 次跨步跃跳后双脚落地。评估下肢无氧爆发功率与神经肌肉控制能力。'
+  },
   'yoyo_test': {
     regularSource: 'Yo-Yo Intermittent Recovery Test Level 1 (YYIR1)',
     eliteSource: '职业足球/网球体能专项 - Yo-Yo 间歇恢复跑国际常模',
