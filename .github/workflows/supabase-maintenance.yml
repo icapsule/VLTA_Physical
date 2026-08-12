@@ -1,0 +1,76 @@
+name: 🛡️ Supabase Database Keep-Alive & 7-Day Backup
+
+on:
+  schedule:
+    # 每天北京时间凌晨 02:00 运行 (UTC 18:00)
+    - cron: '0 18 * * *'
+  workflow_dispatch: # 支持在 GitHub Web 界面一键手动触发
+
+jobs:
+  keep-alive:
+    name: ⚡ 数据库物理直连保活 (Keep Alive)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 安装 PostgreSQL 客户端
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: 运行物理 SQL 查询强置重置休眠倒计时
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -z "$PROJECT_REF" ] || [ -z "$DB_PASSWORD" ]; then
+            echo "❌ 错误: GitHub Secrets 未设置 SUPABASE_PROJECT_REF 或 SUPABASE_DB_PASSWORD"
+            exit 1
+          fi
+
+          echo "正在建立与 Supabase PostgreSQL 5432 端口的物理连接..."
+          
+          # 尝试通过 Direct Domain 或 Session Pooler 进行事务查询
+          DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+          
+          psql "$DB_URI" -c "SELECT count(*) FROM profiles;" -c "SELECT NOW();"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ 保活打卡成功！Supabase 数据库活性状态已重置！"
+          else
+            echo "❌ 数据库物理连接失败！请确认项目未被云端销毁且密码正确。"
+            exit 1
+          fi
+
+  daily-backup:
+    name: 📦 数据库 7 天滚动增量/全量备份 (7-Day Retention Backup)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 安装 PostgreSQL 客户端
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: 导出全量 PostgreSQL 数据库快照 (.sql.gz)
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -z "$PROJECT_REF" ] || [ -z "$DB_PASSWORD" ]; then
+            echo "❌ 错误: GitHub Secrets 未设置 SUPABASE_PROJECT_REF 或 SUPABASE_DB_PASSWORD"
+            exit 1
+          fi
+
+          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+          FILENAME="vlta_physical_backup_${TIMESTAMP}.sql"
+          
+          DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+          
+          echo "导出 Supabase 表结构及全量数据..."
+          pg_dump "$DB_URI" > "$FILENAME"
+          
+          echo "压缩备份文件..."
+          gzip "$FILENAME"
+          
+          echo "BACKUP_FILE_GZ=${FILENAME}.gz" >> $GITHUB_ENV
+
+      - name: 上传备份快照至 GitHub Artifacts (严格保存 7 天)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE_GZ }}
+          retention-days: 7 # 7 天自动轮转销毁旧快照
