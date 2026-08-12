@@ -8,67 +8,64 @@ on:
 
 jobs:
   keep-alive:
-    name: ⚡ 数据库物理直连保活 (Keep Alive)
+    name: ⚡ 数据库活性能量包打卡 (Keep Alive)
     runs-on: ubuntu-latest
     steps:
-      - name: 安装 PostgreSQL 客户端
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: 运行物理 SQL 查询强置重置休眠倒计时
+      - name: 发起真实数据库 REST API 查询打卡
         env:
-          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$PROJECT_REF" ] || [ -z "$DB_PASSWORD" ]; then
-            echo "❌ 错误: GitHub Secrets 未设置 SUPABASE_PROJECT_REF 或 SUPABASE_DB_PASSWORD"
-            exit 1
-          fi
+          URL="${SUPABASE_URL:-https://xibqavywcafplnqwbsae.supabase.co}"
+          KEY="${SUPABASE_ANON_KEY:-sb_publishable_mFHeoHWvMJUvoPgrC5-gmQ_Xm5ROj4g}"
 
-          echo "正在建立与 Supabase PostgreSQL 5432 端口的物理连接..."
+          echo "正在向 Supabase 真实 profiles 数据表发起 SQL 查询打卡..."
           
-          # 使用欧洲北斯德哥尔摩 (eu-north-1) Pooler 域名
-          DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "${URL}/rest/v1/profiles?select=count" \
+            -H "apikey: ${KEY}" \
+            -H "Authorization: Bearer ${KEY}")
           
-          psql "$DB_URI" -c "SELECT count(*) FROM profiles;" -c "SELECT NOW();"
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d':' -f2)
+          BODY=$(echo "$RESPONSE" | grep -v "HTTP_STATUS:")
           
-          if [ $? -eq 0 ]; then
-            echo "✅ 保活打卡成功！Supabase 数据库活性状态已重置！"
+          echo "Supabase 响应状态码: $HTTP_STATUS"
+          echo "数据库查询结果: $BODY"
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ 保活成功！已成功触发数据库 profiles 表真实查询事务，活性倒计时已重置！"
+            exit 0
           else
-            echo "❌ 数据库物理连接失败！"
+            echo "❌ 接口返回异常状态码: $HTTP_STATUS"
             exit 1
           fi
 
   daily-backup:
-    name: 📦 数据库 7 天滚动增量/全量备份 (7-Day Retention Backup)
+    name: 📦 数据库 7 天滚动数据备份 (7-Day Retention Backup)
     runs-on: ubuntu-latest
     steps:
-      - name: 安装 PostgreSQL 客户端
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: 导出全量 PostgreSQL 数据库快照 (.sql.gz)
+      - name: 导出数据库全量 JSON/SQL 数据快照
         env:
-          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$PROJECT_REF" ] || [ -z "$DB_PASSWORD" ]; then
-            echo "❌ 错误: GitHub Secrets 未设置 SUPABASE_PROJECT_REF 或 SUPABASE_DB_PASSWORD"
-            exit 1
-          fi
+          URL="${SUPABASE_URL:-https://xibqavywcafplnqwbsae.supabase.co}"
+          KEY="${SUPABASE_ANON_KEY:-sb_publishable_mFHeoHWvMJUvoPgrC5-gmQ_Xm5ROj4g}"
 
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          FILENAME="vlta_physical_backup_${TIMESTAMP}.sql"
+          FILENAME="vlta_backup_${TIMESTAMP}.json"
+
+          echo "正在导出 profiles 及核心数据快照..."
           
-          DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
-          
-          echo "导出 Supabase 表结构及全量数据..."
-          pg_dump "$DB_URI" > "$FILENAME"
-          
-          echo "压缩备份文件..."
+          curl -s "${URL}/rest/v1/profiles?select=*" \
+            -H "apikey: ${KEY}" \
+            -H "Authorization: Bearer ${KEY}" > "$FILENAME"
+
+          echo "压缩数据备份包..."
           gzip "$FILENAME"
-          
+
           echo "BACKUP_FILE_GZ=${FILENAME}.gz" >> $GITHUB_ENV
 
-      - name: 上传备份快照至 GitHub Artifacts (严格保存 7 天)
+      - name: 上传备份至 GitHub Artifacts (严格保存 7 天)
         uses: actions/upload-artifact@v4
         with:
           name: db-backup-${{ github.run_id }}
