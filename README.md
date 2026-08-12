@@ -109,4 +109,25 @@ For in-depth development, architecture decisions, or commercial alignment, every
 
 ---
 
+## 🛡️ Database Maintenance & Backups (运维与数据备份)
+
+To ensure the Supabase PostgreSQL database remains **7×24 online without free-tier inactivity pausing** and is **fully protected with automated 7-day rolling backups**, the project includes a dedicated automation pipeline:
+
+### ⚡ 1. 100% Bulletproof Keep-Alive
+- **Mechanism**: Every 2 days, a GitHub Actions workflow (`.github/workflows/supabase-maintenance.yml`) executes a real SQL query (`/rest/v1/profiles?select=count`) against the database.
+- **Benefit**: Fully resets Supabase's 7-day inactivity pause countdown, keeping the cloud database permanently active.
+
+### 📦 2. Automated 7-Day Rolling Backups
+- **Cloud Backup**: Every day at 02:00 AM UTC, the workflow exports a full JSON/SQL snapshot of the database, compresses it (`.gz`), and uploads it to **GitHub Artifacts**.
+- **Retention**: Artifacts are set with `retention-days: 7` to automatically cycle and retain the last 7 days of rolling backups.
+
+### 💻 3. Local One-Click Manual Backup
+You can trigger a full local backup snapshot at any time before major deployments or schema migrations:
+```bash
+npm run db:backup
+```
+The output `.sql` file will be securely stored in the local `/backups/` directory (git-ignored).
+
+---
+
 > *"Before modifying a single line of code in this project, ensure that the requirement is comprehensively documented and ratified within the corresponding PRD or SPEC document."*
