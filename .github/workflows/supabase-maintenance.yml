@@ -26,16 +26,15 @@ jobs:
 
           echo "正在建立与 Supabase PostgreSQL 5432 端口的物理连接..."
           
-          # 支持 Direct Host 与 Pooler Host 双向回退
-          DIRECT_URI="postgresql://postgres:${DB_PASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres"
-          POOLER_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+          # 使用欧洲北斯德哥尔摩 (eu-north-1) Pooler 域名
+          DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
           
-          psql "$DIRECT_URI" -c "SELECT count(*) FROM profiles;" -c "SELECT NOW();" || psql "$POOLER_URI" -c "SELECT count(*) FROM profiles;" -c "SELECT NOW();"
+          psql "$DB_URI" -c "SELECT count(*) FROM profiles;" -c "SELECT NOW();"
           
           if [ $? -eq 0 ]; then
             echo "✅ 保活打卡成功！Supabase 数据库活性状态已重置！"
           else
-            echo "❌ 数据库物理连接失败！这是由于 Supabase 云端项目未在 Dashboard 恢复或该项目已经被彻底销毁导致的。"
+            echo "❌ 数据库物理连接失败！"
             exit 1
           fi
 
@@ -59,11 +58,10 @@ jobs:
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
           FILENAME="vlta_physical_backup_${TIMESTAMP}.sql"
           
-          DIRECT_URI="postgresql://postgres:${DB_PASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres"
-          POOLER_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+          DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
           
           echo "导出 Supabase 表结构及全量数据..."
-          pg_dump "$DIRECT_URI" > "$FILENAME" 2>/dev/null || pg_dump "$POOLER_URI" > "$FILENAME"
+          pg_dump "$DB_URI" > "$FILENAME"
           
           echo "压缩备份文件..."
           gzip "$FILENAME"

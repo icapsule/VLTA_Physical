@@ -26,7 +26,7 @@ OUTPUT_FILE="backups/vlta_backup_${TIMESTAMP}.sql"
 
 echo "📦 正在导出 Supabase 数据库到: ${OUTPUT_FILE} ..."
 
-DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+DB_URI="postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
 
 pg_dump "$DB_URI" > "$OUTPUT_FILE"
 
