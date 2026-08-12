@@ -45,6 +45,11 @@ const METRIC_SOURCES: Record<string, { regularSource: string; eliteSource: strin
     eliteSource: 'ITF (国际网球联合会) / 田径跳跃与网球下肢多级跳爆发力常模',
     description: 'Five-Jump Test (5JT) 是评估运动员下肢水平爆发力、下肢弹性功率与拉伸-短缩循环 (SSC) 效率的核心测试。运动员双脚并拢起跳，连续进行 5 次跨步跃跳后双脚落地。评估下肢无氧爆发功率与神经肌肉控制能力。'
   },
+  'sprint_50m': {
+    regularSource: '《国家学生体质健康标准》50米跑评分标准 & Eurofit 常模',
+    eliteSource: '《中国田径运动员技术等级标准》(短跑) & IAAF 青少年速度评估',
+    description: '50米冲刺跑是评估运动员极速加速度、神经肌肉快速招募能力与短跑反应速度的核心指标。测试以秒(s)为单位，数值越小越好。U18竞技精英男子需达到5.8秒-6.0秒以内，女子达到6.6秒-6.8秒以内。'
+  },
   'yoyo_test': {
     regularSource: 'Yo-Yo Intermittent Recovery Test Level 1 (YYIR1)',
     eliteSource: '职业足球/网球体能专项 - Yo-Yo 间歇恢复跑国际常模',
